@@ -27,6 +27,8 @@ adapt_complex_csv = function(data){
     print('New date constructed')
   }
 
+
+
     #print(temp_dataset)
 
   return(temp_dataset)
@@ -68,7 +70,24 @@ read_eddy_data = function(data_path)
     # if the merged dataset doesn't exist, create it
     if (!exists("dataset")){
       print(paste(paste("File",file, sep = " "), "read", sep=" "))
-      dataset = fread(file, header = "auto", autostart = 60, skip=1)
+      dataset = tryCatch({      
+                fread(file, header = "auto", autostart = 60, skip=1)
+              }, 
+        warning = function(war) {
+                # warning handler picks up where error was generated
+                print(paste("MY_WARNING:  ",war))
+                return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
+              }, 
+        error = function(err) {
+                # error handler picks up where error was generated
+                print(paste("MY_ERROR:  ",err))
+                return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
+              }, 
+        finally = {        
+                print(paste("File read:",file))
+              })
+      
+      
       #temp_dataset_startline = which(as.character(dataset$daytime) == "T" | as.character(dataset$daytime) == "F")[1];
       #dataset = dataset[temp_dataset_startline:length(dataset[['DOY']]), ]
       dataset = adapt_complex_csv(dataset)
@@ -365,7 +384,7 @@ ma  = function(x,n=7){
 }
 
 daily_data = function(Data){
-  Data = Data[[1]]
+  #Data = Data[[1]]
   new_names = c()
   for (name in names(Data)){
     if ((class(Data[[name]])[1] == 'numeric' ) | (class(Data[[name]])[1] == 'integer' ) | (class(Data[[name]])[1] == 'character' )){
@@ -384,6 +403,7 @@ daily_data = function(Data){
         daily_sums = data.frame(daily_sum)
         daily_means = data.frame(daily_mean)
         daily_errors = data.frame(daily_error)
+        
       }
       new_names = c(new_names,name)
     }
@@ -426,9 +446,11 @@ daily_data = function(Data){
 
 weekly_data = function(Data){
   new_names = c()
-  Data = Data[[1]]
+  #Data = Data[[1]]
   for (name in names(Data)){
-    if ((class(AllData_A[[name]])[1] == 'numeric' ) | (class(AllData_A[[name]])[1] == 'integer' ) | (class(AllData_A[[name]])[1] == 'character' )){
+    
+    if ((class(Data[[name]])[1] == 'numeric' ) | (class(Data[[name]])[1] == 'integer' ) | (class(Data[[name]])[1] == 'character' )){
+      
       weekly_sum = tapply(as.numeric(Data[[name]]), Data$week, sum, na.rm = TRUE)
       weekly_mean = tapply(as.numeric(Data[[name]]), Data$week, mean, na.rm = TRUE)
       weekly_error = tapply(as.numeric(Data[[name]]), Data$week, sd)
@@ -439,7 +461,8 @@ weekly_data = function(Data){
         weekly_means = cbind(weekly_means, weekly_mean)
         weekly_errors = cbind(weekly_errors, weekly_error)
       }
-      else{
+      else
+      {
         weekly_sums = data.frame(weekly_sum)
         weekly_means = data.frame(weekly_mean)
         weekly_errors = data.frame(weekly_error)
@@ -456,7 +479,7 @@ weekly_data = function(Data){
 month_data = function(Data){
   mnew_names = c()
   for (name in names(Data)){
-    if ((class(AllData_A[[name]])[1] == 'numeric' ) | (class(AllData_A[[name]])[1] == 'integer' ) | (class(AllData_A[[name]])[1] == 'character' )){
+    if ((class(Data[[name]])[1] == 'numeric' ) | (class(Data[[name]])[1] == 'integer' ) | (class(Data[[name]])[1] == 'character' )){
       month_sum = tapply(as.numeric(Data[[name]]), Data$month_number, sum, na.rm = TRUE )
       month_mean = tapply(as.numeric(Data[[name]]), Data$month_number, mean, na.rm = TRUE)
       month_error = tapply(as.numeric(Data[[name]]), Data$month_number, sd)
@@ -488,15 +511,15 @@ hourly_data = function(AllData){
   hour_means = c()
   hour_errors = c()
   hour_months  = c()
-  AllData = AllData[[1]]
+  #AllData = AllData[[1]]
 
   for (m in 1:12) {
 
-    Data = AllData[AllData[['month_number']] == m,]
+    Data = AllData[AllData$month_number == m,]
 
-    hour_mean = tapply(Data[['NEE_f']], Data$hour, mean)
+    hour_mean = tapply(Data$NEE_f, Data$hour, mean)
     #print(hour_mean)
-    hour_error = tapply(Data[['NEE_f']], Data$hour, sd)
+    hour_error = tapply(Data$NEE_f, Data$hour, sd)
     hour_error = hour_error/sqrt(length(hour_error))*1.96
     hour_month = rep(m, length(hour_error))
     hour_means = c(hour_means, hour_mean)
@@ -514,7 +537,7 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
   hour_means = c()
   hour_errors = c()
   hour_months  = c()
-  AllData=AllData[[1]]
+  #AllData=AllData[[1]]
   AllData = AllData[(AllData[['DateTime']] > as.POSIXct(start_date) & AllData[['DateTime']] < as.POSIXct(stop_date)),]
   nmax = max(na.exclude(AllData[['month_number']]))
   nmin = min(na.exclude(AllData[['month_number']]))
@@ -541,7 +564,7 @@ hourly_data_for_event = function(AllData, event_name){
   hour_errors = c()
 
 
-  Data = AllData[[1]][AllData[[1]][[event_name]],]
+  Data = AllData[AllData[[event_name]],]
 
   hour_mean = tapply(Data[['NEE_f']], Data$hour, mean)
   hour_error = tapply(Data[['NEE_f']], Data$hour, sd)
@@ -598,7 +621,7 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   # Reading Data
   data = read_eddy_data(DataFolder)
   biometdata = read_biomet_data(DataFolder)
-
+  
   # Forming data set for gap filling
   joined_data = join_for_gapfilling(data, biometdata)
 
@@ -617,7 +640,7 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   #Read event filed and add event's masks
   WithEvents = add_events(events_file,FullData_with_Sep,'DateTime')
   # WindRose
-  AllData = list(WithEvents, Reddyproc)
+  AllData = list(dt = WithEvents, reddy = Reddyproc)
 
   return(AllData)
 }

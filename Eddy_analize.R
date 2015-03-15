@@ -1,5 +1,5 @@
 source(file="Eddy_postproduction.r", local=TRUE)
-function = DrawVariablesbyMonth(){}
+#function = DrawVariablesbyMonth(){}
 
 
 DataFolderA = 'Data_A/'
@@ -18,11 +18,16 @@ events_B = 'Data_B/events.csv'
 Site_coord_and_zone = c(55.837631, 37.564302, 4)
 All_towers_height  = 1.5
 AllData_A = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+
 AllData_B = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-setkey(AllData_A, 'DateTime')
-setkey(AllData_B, 'DateTime')
+save(AllData_B, file="AllData_B_2013")
+
+setkey(AllData_A$dt, 'DateTime')
+setkey(AllData_B$dt, 'DateTime')
+
+
 #Adding PAR to site B as soon they very close
-AllData_B = merge(AllData_B,AllData_A[,c(1,40),with=FALSE], by = 'DateTime')
+AllData_B$dt = merge(AllData_B$dt,AllData_A$dt[,c(1,40),with=FALSE], by = 'DateTime')
 
 #new_names = paste(names(AllData_A),"_a", sep="")
 #names(AllData_A) = new_names
@@ -37,59 +42,59 @@ AllData_B = merge(AllData_B,AllData_A[,c(1,40),with=FALSE], by = 'DateTime')
 
 #moving average for week
 
+########                      Important check
+# apply(AllData_A$dt,2, typeof)
+# Convert all to right classes
+# Check what is in reddy part
 
-
-
-
-
-PlotWindRoses(AllData_A, 'wind_speed', 'wind_dir')
-NA_count = tapply(as.numeric(AllData_A['NEE']),AllData_A$Doy, function(x) x)
-AllData_A$SWC_1 = as.numeric(AllData_A$SWC_1)
-AllData_B$SWC_1 = as.numeric(AllData_B$SWC_1)
-AllData_A$moisture_levels = cut(AllData_A$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
-AllData_B$moisture_levels = cut(AllData_B$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
-hourly_data_A = hourly_data(AllData_A)
-hourly_data_B = hourly_data(AllData_B)
-AllData_A_daily = daily_data(AllData_A)
-AllData_B_daily = daily_data(AllData_B)
-AllData_A_weekly = weekly_data(AllData_A)
-AllData_B_weekly = weekly_data(AllData_B)
-AllData_A_monthly = month_data(AllData_A)
-AllData_B_monthly = month_data(AllData_B)
-hourly_A_snow = hourly_NEE_period(AllData_A,"2013-01-01","2013-04-16")
-hourly_A_16_04_5_05 = hourly_NEE_period(AllData_A,"2013-04-16","2013-05-05")
-hourly_A_6_05_15_05 = hourly_NEE_period(AllData_A,"2013-05-05","2013-05-15")
-hourly_A_15_05_10_06 = hourly_NEE_period(AllData_A,"2013-05-15","2013-06-10")
-hourly_A_10_06_17_06 = hourly_NEE_period(AllData_A,"2013-06-10","2013-06-17")
-hourly_A_17_06_24_06 = hourly_NEE_period(AllData_A,"2013-06-17","2013-06-24")
-hourly_A_24_06_01_07 = hourly_NEE_period(AllData_A,"2013-06-24","2013-07-01")
-hourly_A_01_07_08_07 = hourly_NEE_period(AllData_A,"2013-07-01","2013-07-08")
-hourly_A_08_07_15_07 = hourly_NEE_period(AllData_A,"2013-07-08","2013-07-15")
-hourly_A_15_07_25_07 = hourly_NEE_period(AllData_A,"2013-07-15","2013-07-25")
-hourly_A_25_07_08_08 = hourly_NEE_period(AllData_A,"2013-07-25","2013-08-08")
-hourly_A_08_08_31_13 = hourly_NEE_period(AllData_A,"2013-08-08","2013-12-31")
-hourly_B_snow = hourly_NEE_period(AllData_B,"2013-01-01","2013-04-16")
-hourly_B_16_04_5_05 = hourly_NEE_period(AllData_B,"2013-04-16","2013-05-05")
-hourly_B_6_05_15_05 = hourly_NEE_period(AllData_B,"2013-05-05","2013-05-15")
-hourly_B_15_05_10_06 = hourly_NEE_period(AllData_B,"2013-05-15","2013-06-10")
-hourly_B_10_06_17_06 = hourly_NEE_period(AllData_B,"2013-06-10","2013-06-17")
-hourly_B_17_06_24_06 = hourly_NEE_period(AllData_B,"2013-06-17","2013-06-24")
-hourly_B_24_06_01_07 = hourly_NEE_period(AllData_B,"2013-06-24","2013-07-01")
-hourly_B_01_07_08_07 = hourly_NEE_period(AllData_B,"2013-07-01","2013-07-08")
-hourly_B_08_07_15_07 = hourly_NEE_period(AllData_B,"2013-07-08","2013-07-15")
-hourly_B_15_07_25_07 = hourly_NEE_period(AllData_B,"2013-07-15","2013-07-25")
-hourly_B_25_07_08_08 = hourly_NEE_period(AllData_B,"2013-07-25","2013-08-08")
-hourly_B_08_08_31_13 = hourly_NEE_period(AllData_B,"2013-08-08","2013-12-31")
-hourly_snow_cover_A = hourly_data_for_event(AllData_A,'snow_cover')
-hourly_snow_cover_B = hourly_data_for_event(AllData_B,'snow_cover')
+PlotWindRoses(AllData_A$dt, 'wind_speed', 'wind_dir')
+NA_count = tapply(as.numeric(AllData_A$dt$NEE),AllData_A$dt$Doy, function(x) x)
+AllData_A$dt$SWC_1 = as.numeric(AllData_A$dt$SWC_1)
+AllData_B$dt$SWC_1 = as.numeric(AllData_B$dt$SWC_1)
+AllData_A$moisture_levels = cut(AllData_A$dt$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
+AllData_B$moisture_levels = cut(AllData_B$dt$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
+hourly_data_A = hourly_data(AllData_A$dt)
+hourly_data_B = hourly_data(AllData_B$dt)
+AllData_A_daily = daily_data(AllData_A$dt)
+AllData_B_daily = daily_data(AllData_B$dt)
+AllData_A_weekly = weekly_data(AllData_A$dt)
+AllData_B_weekly = weekly_data(AllData_B$dt)
+AllData_A_monthly = month_data(AllData_A$dt)
+AllData_B_monthly = month_data(AllData_B$dt)
+hourly_A_snow = hourly_NEE_period(AllData_A$dt,"2013-01-01","2013-04-16")
+hourly_A_16_04_5_05 = hourly_NEE_period(AllData_A$dt,"2013-04-16","2013-05-05")
+hourly_A_6_05_15_05 = hourly_NEE_period(AllData_A$dt,"2013-05-05","2013-05-15")
+hourly_A_15_05_10_06 = hourly_NEE_period(AllData_A$dt,"2013-05-15","2013-06-10")
+hourly_A_10_06_17_06 = hourly_NEE_period(AllData_A$dt,"2013-06-10","2013-06-17")
+hourly_A_17_06_24_06 = hourly_NEE_period(AllData_A$dt,"2013-06-17","2013-06-24")
+hourly_A_24_06_01_07 = hourly_NEE_period(AllData_A$dt,"2013-06-24","2013-07-01")
+hourly_A_01_07_08_07 = hourly_NEE_period(AllData_A$dt,"2013-07-01","2013-07-08")
+hourly_A_08_07_15_07 = hourly_NEE_period(AllData_A$dt,"2013-07-08","2013-07-15")
+hourly_A_15_07_25_07 = hourly_NEE_period(AllData_A$dt,"2013-07-15","2013-07-25")
+hourly_A_25_07_08_08 = hourly_NEE_period(AllData_A$dt,"2013-07-25","2013-08-08")
+hourly_A_08_08_31_13 = hourly_NEE_period(AllData_A$dt,"2013-08-08","2013-12-31")
+hourly_B_snow = hourly_NEE_period(AllData_B$dt,"2013-01-01","2013-04-16")
+hourly_B_16_04_5_05 = hourly_NEE_period(AllData_B$dt,"2013-04-16","2013-05-05")
+hourly_B_6_05_15_05 = hourly_NEE_period(AllData_B$dt,"2013-05-05","2013-05-15")
+hourly_B_15_05_10_06 = hourly_NEE_period(AllData_B$dt,"2013-05-15","2013-06-10")
+hourly_B_10_06_17_06 = hourly_NEE_period(AllData_B$dt,"2013-06-10","2013-06-17")
+hourly_B_17_06_24_06 = hourly_NEE_period(AllData_B$dt,"2013-06-17","2013-06-24")
+hourly_B_24_06_01_07 = hourly_NEE_period(AllData_B$dt,"2013-06-24","2013-07-01")
+hourly_B_01_07_08_07 = hourly_NEE_period(AllData_B$dt,"2013-07-01","2013-07-08")
+hourly_B_08_07_15_07 = hourly_NEE_period(AllData_B$dt,"2013-07-08","2013-07-15")
+hourly_B_15_07_25_07 = hourly_NEE_period(AllData_B$dt,"2013-07-15","2013-07-25")
+hourly_B_25_07_08_08 = hourly_NEE_period(AllData_B$dt,"2013-07-25","2013-08-08")
+hourly_B_08_08_31_13 = hourly_NEE_period(AllData_B$dt,"2013-08-08","2013-12-31")
+hourly_snow_cover_A = hourly_data_for_event(AllData_A$dt,'snow_cover')
+hourly_snow_cover_B = hourly_data_for_event(AllData_B$dt,'snow_cover')
 Daily_A_114 =  AllData_A_daily[AllData_A_daily[['Doy']] >114,]
 Daily_B_114 =  AllData_B_daily[AllData_B_daily[['Doy']] >114,]
 Daily_A_114$moisture_levels = cut(Daily_A_114$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
 Daily_B_114$moisture_levels = cut(Daily_B_114$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
-AllData_A_114 =  AllData_A[AllData_A[['Doy']] >114,]
+AllData_A_114 =  AllData_A[AllData_A$dt[['Doy']] >114,]
 Daily_A_114_b = Daily_A_114[Daily_A_114[['NA_count']]>47,]
 Daily_B_114_b = Daily_B_114[Daily_B_114[['NA_count']]>47,]
-AllData_B_114 =  AllData_B[AllData_B[['Doy']] >114,]
+AllData_B_114 =  AllData_B[AllData_B$dt[['Doy']] >114,]
 Weekly_A_114 =  AllData_A_weekly[AllData_A_weekly[['Doy']] >114,]
 Weekly_A_90 =  AllData_A_weekly[AllData_A_weekly[['Doy']] >90,]
 Weekly_B_114 =  AllData_B_weekly[AllData_B_weekly[['Doy']] >114,]
