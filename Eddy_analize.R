@@ -1,14 +1,12 @@
 source(file="Eddy_postproduction.r", local=TRUE)
 #function = DrawVariablesbyMonth(){}
 
-
 DataFolderA = 'Data_A/'
 DataFolderB = 'Data_B/'
 Site_A = c(410041, 6188869)
 Site_B = c(410155, 6188893)
 site_polygon  = data.frame(as.numeric(c(409957,410179,410243,410014)),as.numeric(c(6188984,6189058,6188849,6188774)))
-site_polygon_A  = data.frame(as.numeric(c(410109.5,410012.7,409977.3,410086)),as.numeric(c(6188807,6188739
-,6188905,6188942)))
+site_polygon_A  = data.frame(as.numeric(c(410109.5,410012.7,409977.3,410086)),as.numeric(c(6188807,6188739,6188905,6188942)))
 site_polygon_B  = data.frame(as.numeric(c(410188,410225,410128,410086)),as.numeric(c(6188974,6188840,6188811,6188942)))
 forest_polygon  = data.frame(as.numeric(c(409472,409943,409532,408959,408587,408471,408353,408124,408048,408083,408088,408041,408038,408237,408524,408547,409090 ,409323,409550 ,409328,409535,409454)),as.numeric(c(6186623,6186720,6187669,6187536,6187517,6187632,6187882,6188235,6188193,6187844,6187575,6187405,6187222 ,6186987,6186310,6186133,6185574,6185407,6185467,6186180,6186267,6186542)))
 
@@ -17,6 +15,54 @@ events_A = 'Data_A/events.csv'
 events_B = 'Data_B/events.csv'
 Site_coord_and_zone = c(55.837631, 37.564302, 4)
 All_towers_height  = 1.5
+
+
+
+
+
+data = read_eddy_data("Data_A/")
+biometdata = read_biomet_data("Data_A/")
+
+# Forming data set for gap filling
+joined_data = join_for_gapfilling(data, biometdata)
+
+#Generating column of max footprints
+
+joined_data = max_footprints(Site_A, site_polygon_A, joined_data,'wind_dir')
+#joined_data[subset(joined_data, select=-c(DateTime)), with=FALSE] <- sapply(subset(joined_data, select=-c(DateTime)), as.numeric)
+joined_data[, setdiff(colnames(joined_data),"DateTime")] <- as.data.table(sapply( joined_data[, setdiff(colnames(joined_data),"DateTime"), with=FALSE], as.numeric))
+sapply(joined_data,typeof)
+
+### Разобраться почему эта модная конструкция не работает
+#e = substitute(X := as.numeric(X), list(X = as.symbol(names(joined_data)[names(joined_data) != "DateTime"])))
+#joined_data[ , eval(e)]
+
+
+
+
+
+# Pre Gap filling Filtering
+join.filtered = filter_by_quality(joined_data,All_towers_height)
+na_percent(join.filtered$NEE)
+sapply(join.filtered,class)
+na_percent(joined_data$NEE)
+sapply(joined_data,class)
+#+++ Fill gaps in variables with MDS gap filling algorithm
+# Creating DataTable with filled and biomet data
+Reddyproc  = reddyproc_gapfill(join.filtered)
+FullData = reddyproc_extract_main_data(join.filtered, Reddyproc)
+FullData = ForMotherRussia(FullData)
+#Adding time periods
+FullData_with_Sep = add_separators(FullData,SiteCoordZone[1],SiteCoordZone[2],SiteCoordZone[3] )
+#Read event filed and add event's masks
+WithEvents = add_events(events_file,FullData_with_Sep,'DateTime')
+# WindRose
+AllData = list(dt = WithEvents, reddy = Reddyproc)
+
+
+
+
+
 AllData_A = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
 AllData_B = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
@@ -46,6 +92,8 @@ AllData_B$dt = merge(AllData_B$dt,AllData_A$dt[,c(1,40),with=FALSE], by = 'DateT
 # apply(AllData_A$dt,2, typeof)
 # Convert all to right classes
 # Check what is in reddy part
+Quality_NEE = length(which(is.na(AllData_B$dt$H2O_NEE)))/length(AllData_B$dt$H2O_NEE)
+
 
 PlotWindRoses(AllData_A$dt, 'wind_speed', 'wind_dir')
 NA_count = tapply(as.numeric(AllData_A$dt$NEE),AllData_A$dt$Doy, function(x) x)
@@ -91,11 +139,11 @@ Daily_A_114 =  AllData_A_daily[AllData_A_daily[['Doy']] >114,]
 Daily_B_114 =  AllData_B_daily[AllData_B_daily[['Doy']] >114,]
 Daily_A_114$moisture_levels = cut(Daily_A_114$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
 Daily_B_114$moisture_levels = cut(Daily_B_114$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
-AllData_A_114 =  AllData_A[AllData_A$dt[['Doy']] >114,]
-Daily_A_114_b = Daily_A_114[Daily_A_114[['NA_count']]>47,]
+AllData_A_114 =  AllData_A$dt[AllData_A$dt[['Doy']] >114,]
+Daily_A_114_b = Daily_A_114$dt[Daily_A_114$dt[['NA_count']]>47,]
 Daily_B_114_b = Daily_B_114[Daily_B_114[['NA_count']]>47,]
 AllData_B_114 =  AllData_B[AllData_B$dt[['Doy']] >114,]
-Weekly_A_114 =  AllData_A_weekly[AllData_A_weekly[['Doy']] >114,]
+Weekly_A_114 =  AllData_A_weekly$dt[AllData_A_weekly$dt[['Doy']] >114,]
 Weekly_A_90 =  AllData_A_weekly[AllData_A_weekly[['Doy']] >90,]
 Weekly_B_114 =  AllData_B_weekly[AllData_B_weekly[['Doy']] >114,]
 periods_a =c('hourly_A_snow','hourly_A_6_05_15_05','hourly_A_15_05_10_06','hourly_A_10_06_17_06','hourly_A_17_06_24_06','hourly_A_24_06_01_07','hourly_A_01_07_08_07','hourly_A_08_07_15_07','hourly_A_15_07_25_07','hourly_A_25_07_08_08','hourly_A_08_08_31_13')
@@ -110,9 +158,9 @@ DP = ggplot() +
   geom_errorbar(data =hourly_data_As, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd) +
   geom_line(data =hourly_data_As, aes(x=hour, y=hour_means),position=pd,size=.5, linetype=2) +
   geom_point(data = hourly_data_As, aes(x=hour, y=hour_means),position=pd,size=2, shape=21, fill="white")+
-  geom_errorbar(data = hourly_data_Bs, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors),linetype=1,size=.1, width=.4, position=pd)  +
-  geom_line(data =hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=.5) +
-  geom_point(data = hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=2, shape=21, fill="black")+
+  #geom_errorbar(data = hourly_data_Bs, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors),linetype=1,size=.1, width=.4, position=pd)  +
+  #geom_line(data =hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=.5) +
+  #geom_point(data = hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=2, shape=21, fill="black")+
   geom_hline(yintercept = 0, linetype=2)+
   facet_wrap(~hour_months, ncol =3)+
   xlab("Time of day (Hour)")+

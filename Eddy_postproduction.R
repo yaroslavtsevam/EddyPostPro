@@ -33,6 +33,15 @@ adapt_complex_csv = function(data){
 
   return(temp_dataset)
 }
+
+na_percent = function(x) {
+  
+  return(length(which(is.na(x)))/length(x))
+}
+df.mass.tonumeric = function(df) {
+  return (lapply(joined_data, function(x){if(class(x)!="character"){x=as.numeric(x)}}))
+}
+
 read_eddy_data = function(data_path)
 {
   #setwd(data_path)
@@ -129,6 +138,7 @@ read_biomet_data = function(data_path)
 # Fill gap by date
 
 join_for_gapfilling = function(data_,biometdata_){
+  
   data_[data_ == -9999.0] = NA
   biometdata_[['TIMESTAMP']] = as.POSIXct(as.POSIXlt(biometdata_[['TIMESTAMP']],format="%Y-%m-%d %H:%M:%S", tz="MSK"))
 
@@ -156,8 +166,13 @@ join_for_gapfilling = function(data_,biometdata_){
                           as.numeric(data_[['rand_err_co2_flux']]),
                           as.numeric(data_[['qc_co2_flux']]))
 
+ 
+  
   names(EddyData.F) = c('Year','DoY','Hour','date','NEE','H2O_NEE','LE','H','Tair','rH','VPD','Ustar','wind_speed','wind_dir','x_70%','x_90%','QF_h2o','rand_err_h2o_flux','rand_err_co2_flux','QF')
   EddyDataWithPosix.F <- fConvertTimeToPosix(na.exclude(EddyData.F), 'YDH', Year.s='Year', Day.s='DoY', Hour.s='Hour')
+  
+  print(lapply(EddyDataWithPosix.F,class))
+  
   EddyDataWithPosixNew.F = data.table(fill_gap_by_date(EddyDataWithPosix.F,"DateTime",21))
   print("Filled gaps")
   setnames(biometdata_,'TIMESTAMP','DateTime')
@@ -165,6 +180,9 @@ join_for_gapfilling = function(data_,biometdata_){
   setkey(EddyDataWithPosixNew.F,'DateTime')
 
   joined = merge(biometdata_[,c(1:57), with=FALSE],EddyDataWithPosixNew.F, all=TRUE, by=c('DateTime'),allow.cartesian=TRUE)
+  
+ 
+  
   #join = EddyDataWithPosixNew.F[biometdata_[,c(1,5,6,7,8,15,16,17,20,23,33,36,37,38,39,40,44,45,46,47,48,49,50,51,52,53,54,56,57), with=FALSE],roll=FALSE]
   print('Joined')
   #Converting column names to satisfy REddyProc convention
@@ -199,6 +217,9 @@ join_for_gapfilling = function(data_,biometdata_){
     print( length(which(duplicated(joined))) )
     joined = joined[!which(duplicated(joined))]
   }
+  
+ 
+  
   print("Starting big Gap fill")
   joined.tf = fill_gap_by_date(joined,"DateTime",77)
   print('Stoped big gap fill')
@@ -211,6 +232,9 @@ join_for_gapfilling = function(data_,biometdata_){
   if ( length(which(is.na(joined.tf[['DateTime']]))) > 0 ) {
     joined.tf = joined.tf[!which(is.na(joined.tf[['DateTime']]))]
   }
+  
+
+  
   return(joined.tf)
 }
 
@@ -295,18 +319,27 @@ filter_by_quality = function(join_,tower_height){
   print(join_.sigma)
   print(join_.mean)
 
-  print("Going to filter out next amount of NEE data:")
-  print(length(join_[['NEE']][join_[['NEE']] < join_.mean - 3*join_.sigma]))
+
   join_[['NEE']][join_[['NEE']] < join_.mean - 3*join_.sigma] = NA
   join_[['NEE']][join_[['NEE']] > join_.mean + 3*join_.sigma ] = NA
+  print("Left after 3sigma filter:")
+  print(length(which(is.finite(join_$NEE))))
   join_[['NEE']][join_[['x_70%']] > join_[['max_footprint']] ] = NA
-  join_[['NEE']][join_[['x_70%']] > tower_height * 10]= NA
+  print("Left after max footprint due to field size filter:")
+  print(length(which(is.finite(join_$NEE))))
+  join_[['NEE']][join_[['x_70%']] > tower_height * 100]= NA
+  print("Left after max footprint due to tower height filter:")
+  print(length(which(is.finite(join_$NEE))))
   join_[['NEE']][join_[['x_70%']] < 2 ] = NA
+  print("Left after min footprint filter:")
+  print(length(which(is.finite(join_$NEE))))
   join_[['NEE']][join_[['QF']] > 7 ] = NA
+  print("Left after flux quality filter:")
+  print(length(which(is.finite(join_$NEE))))
   join_[['H2O_NEE']][join_[['QF_h2o']] > 5 ]= NA
   join_[['H2O_NEE']][join_[['x_70%']] > join_[['max_footprint']]] = NA
   join_[['H2O_NEE']][join_[['x_70%']] > tower_height * 10] = NA
-  join_[['H20_NEE']][join_[['x_70%']] < 2 ] = NA
+  join_[['H2O_NEE']][join_[['x_70%']] < 2 ] = NA
 
   return(join_)
 }
@@ -628,6 +661,8 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   #Generating column of max footprints
   joined_data = max_footprints(SiteUTM, SitePolygon, joined_data,'wind_dir')
   # Pre Gap filling Filtering
+  joined_data[, setdiff(colnames(joined_data),"DateTime")] <- as.data.table(sapply( joined_data[, setdiff(colnames(joined_data),"DateTime"), with=FALSE], as.numeric))
+  
   join.filtered = filter_by_quality(joined_data,tower_height)
 
   #+++ Fill gaps in variables with MDS gap filling algorithm
