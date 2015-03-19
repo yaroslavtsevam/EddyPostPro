@@ -18,51 +18,6 @@ All_towers_height  = 1.5
 
 
 
-
-
-data = read_eddy_data("Data_A/")
-biometdata = read_biomet_data("Data_A/")
-
-# Forming data set for gap filling
-joined_data = join_for_gapfilling(data, biometdata)
-
-#Generating column of max footprints
-
-joined_data = max_footprints(Site_A, site_polygon_A, joined_data,'wind_dir')
-#joined_data[subset(joined_data, select=-c(DateTime)), with=FALSE] <- sapply(subset(joined_data, select=-c(DateTime)), as.numeric)
-joined_data[, setdiff(colnames(joined_data),"DateTime")] <- as.data.table(sapply( joined_data[, setdiff(colnames(joined_data),"DateTime"), with=FALSE], as.numeric))
-sapply(joined_data,typeof)
-
-### Разобраться почему эта модная конструкция не работает
-#e = substitute(X := as.numeric(X), list(X = as.symbol(names(joined_data)[names(joined_data) != "DateTime"])))
-#joined_data[ , eval(e)]
-
-
-
-
-
-# Pre Gap filling Filtering
-join.filtered = filter_by_quality(joined_data,All_towers_height)
-na_percent(join.filtered$NEE)
-sapply(join.filtered,class)
-na_percent(joined_data$NEE)
-sapply(joined_data,class)
-#+++ Fill gaps in variables with MDS gap filling algorithm
-# Creating DataTable with filled and biomet data
-Reddyproc  = reddyproc_gapfill(join.filtered)
-FullData = reddyproc_extract_main_data(join.filtered, Reddyproc)
-FullData = ForMotherRussia(FullData)
-#Adding time periods
-FullData_with_Sep = add_separators(FullData,SiteCoordZone[1],SiteCoordZone[2],SiteCoordZone[3] )
-#Read event filed and add event's masks
-WithEvents = add_events(events_file,FullData_with_Sep,'DateTime')
-# WindRose
-AllData = list(dt = WithEvents, reddy = Reddyproc)
-
-
-
-
-
 AllData_A = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
 AllData_B = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
@@ -92,7 +47,42 @@ AllData_B$dt = merge(AllData_B$dt,AllData_A$dt[,c(1,40),with=FALSE], by = 'DateT
 # apply(AllData_A$dt,2, typeof)
 # Convert all to right classes
 # Check what is in reddy part
-Quality_NEE = length(which(is.na(AllData_B$dt$H2O_NEE)))/length(AllData_B$dt$H2O_NEE)
+Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE)
+
+
+
+compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
+  pd = position_dodge(.1)
+  graph = ggplot()
+  for (tower in tower_list) {
+    graph = graph + geom_line(data = tower, aes_string(x=x_variable, y=y_variable),position=pd,size=.5)
+    graph = graph + geom_point(data = tower, aes_string(x=x_variable, y=y_variable),position=pd,size=2)
+  
+  
+    if (errorbar){
+      graph =graph + geom_errorbar(data = tower, aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
+    }
+  } 
+  graph =graph +geom_hline(yintercept = 0, linetype=2)
+  if (type=="facet") {
+    graph =graph +facet_wrap(grouping_varaible, ncol = 3)
+  }
+  graph =graph +xlab(xlab)
+  graph =graph +ylab(ylab)
+  graph =graph +theme_few(base_size = 15, base_family = "serif")
+  graph =graph +theme(axis.title.y = element_text(size = 15, face="bold"))
+  graph =graph +theme(axis.title.x = element_text(size =15, face="bold"))
+  graph =graph +ggtitle(title)  
+  
+  return(graph)
+} 
+
+
+compare_plot(list(hourly_data_As,hourly_data_Bs), "hour", "hour_means","facet")
+hourly_data_As$hour_months
+
+
+
 
 
 PlotWindRoses(AllData_A$dt, 'wind_speed', 'wind_dir')
@@ -142,7 +132,7 @@ Daily_B_114$moisture_levels = cut(Daily_B_114$SWC_1, c(0,.1,.2,.3,.4), right=FAL
 AllData_A_114 =  AllData_A$dt[AllData_A$dt[['Doy']] >114,]
 Daily_A_114_b = Daily_A_114$dt[Daily_A_114$dt[['NA_count']]>47,]
 Daily_B_114_b = Daily_B_114[Daily_B_114[['NA_count']]>47,]
-AllData_B_114 =  AllData_B[AllData_B$dt[['Doy']] >114,]
+AllData_B_114 =  AllData_B$dt[AllData_B$dt[['Doy']] >114,]
 Weekly_A_114 =  AllData_A_weekly$dt[AllData_A_weekly$dt[['Doy']] >114,]
 Weekly_A_90 =  AllData_A_weekly[AllData_A_weekly[['Doy']] >90,]
 Weekly_B_114 =  AllData_B_weekly[AllData_B_weekly[['Doy']] >114,]
@@ -158,9 +148,9 @@ DP = ggplot() +
   geom_errorbar(data =hourly_data_As, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd) +
   geom_line(data =hourly_data_As, aes(x=hour, y=hour_means),position=pd,size=.5, linetype=2) +
   geom_point(data = hourly_data_As, aes(x=hour, y=hour_means),position=pd,size=2, shape=21, fill="white")+
-  #geom_errorbar(data = hourly_data_Bs, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors),linetype=1,size=.1, width=.4, position=pd)  +
-  #geom_line(data =hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=.5) +
-  #geom_point(data = hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=2, shape=21, fill="black")+
+  geom_errorbar(data = hourly_data_Bs, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors),linetype=1,size=.1, width=.4, position=pd)  +
+  geom_line(data =hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=.5) +
+  geom_point(data = hourly_data_Bs, aes(x=hour, y=hour_means),position=pd,size=2, shape=21, fill="black")+
   geom_hline(yintercept = 0, linetype=2)+
   facet_wrap(~hour_months, ncol =3)+
   xlab("Time of day (Hour)")+
@@ -239,7 +229,7 @@ Gr_NEE = ggplot() +
   ylab(expression(paste(bold("NEE")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))+
   #μmol CO2 m-2s-1)")+
   geom_vline(xintercept = 207, size=1, alpha=.8)+
-  scale_x_continuous(breaks = round(seq(120, max(Daily_B_114$Doy), by = 50),1))+
+  #scale_x_continuous(breaks = round(seq(120, max(Daily_A_114$Doy), by = 50),1))+
   theme_few(base_size = 15, base_family = "serif")+
   theme(axis.title.y = element_text(size = 15, face="bold")) +
   theme(plot.margin = unit(c(0,1,0,1), "lines"))+
@@ -254,13 +244,13 @@ Gr_Reco = ggplot() +
   geom_point(data = Daily_A_114 , aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=21, fill="white",alpha=.5)+
   geom_line(data = Daily_B_114, aes(x=Doy, y=ma(Reco * 12*18 /10000)), size=.8, position=pd,linetype=1) +
   geom_point(data = Daily_B_114 , aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=17, fill="white",alpha=.5)+
-  #geom_hline(yintercept = 0, size=.5, linetype = 2)+
-  #geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)+
+  geom_hline(yintercept = 0, size=.5, linetype = 2)+
+  geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)+
   xlab("Day of the year")+
   geom_vline(xintercept = 163, size=3, alpha=.2)+
   ylab(expression(paste(bold("Reco")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))+
   #μmol CO2 m-2s-1)")+
-  scale_x_continuous(breaks = round(seq(120, max(Daily_B_114$Doy), by = 50),1))+
+  scale_x_continuous(breaks = round(seq(120, max(Daily_A_114$Doy), by = 50),1))+
   theme_few(base_size = 15, base_family = "serif")+
   theme(axis.title.y = element_text(size = 15, face="bold")) +
   theme(plot.margin = unit(c(0,1,0,1), "lines"))+
@@ -275,17 +265,17 @@ Gr_GPP = ggplot() +
   geom_point(data = Daily_A_114 , aes(x=Doy, y=GPP* 12 * 18/10000),position=pd,size=2, shape=21, fill="white",alpha=.5)+
   geom_line(data = Daily_B_114, aes(x=Doy, y=ma(GPP * 12*18 /10000)), size=.8, position=pd,linetype=1) +
   geom_point(data = Daily_B_114 , aes(x=Doy, y=GPP* 12 * 18/10000),position=pd,size=2, shape=17, fill="white",alpha=.5)+
-  #geom_hline(yintercept = 0, size=.5, linetype = 2)+
-  #geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)+
+  geom_hline(yintercept = 0, size=.5, linetype = 2)+
+  geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)+
   xlab("Day of the year")+
   ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))+
   geom_vline(xintercept = 163, size=3, alpha=.2)+
   #μmol CO2 m-2s-1)")+
-  scale_x_continuous(breaks = round(seq(120, max(Daily_B_114$Doy), by = 50),1))+
+  scale_x_continuous(breaks = round(seq(120, max(Daily_A_114$Doy), by = 50),1))+
   theme_few(base_size = 15, base_family = "serif")+
   theme(plot.margin = unit(c(0,1,0,1), "lines"))+
   theme(axis.title.y = element_text(size = 15, face="bold")) +
-  theme(axis.title.x = element_text(size =15, face="bold"))
+  theme(axis.title.x = element_text(size =15, face="bold"))+
   theme(plot.margin = unit(c(0,1,0,1), "lines"))
   #ggtitle("GPP daily sums for all year ")
 grid.arrange(Gr_NEE, Gr_Reco, Gr_GPP, ncol=1)
@@ -338,8 +328,8 @@ ggplot() +
 ggplot() +
   geom_point(data = Daily_A_114 , aes(x=Tsoil_f, y=Reco* 12 * 18/10000),position=pd,size=2, shape=1, fill="red")+
   geom_smooth(data = Daily_A_114, aes(x=Tsoil_f, y=Reco* 12 * 18/10000), method = "lm", formula = y ~ x + I(x^3), size = 1 )+
-  #geom_point(data = Daily_A_114 , aes(x=Tsoil_f, y=GPP* 12 * 18/10000),position=pd,size=2, shape=2, fill="green")+
-  #geom_point(data = Daily_A_114 , aes(x=Tsoil_f, y=Reco* 12 * 18/10000),position=pd,size=2, shape=3, fill="blue")+
+  geom_point(data = Daily_A_114 , aes(x=Tsoil_f, y=GPP* 12 * 18/10000),position=pd,size=2, shape=2, fill="green")+
+  geom_point(data = Daily_A_114 , aes(x=Tsoil_f, y=Reco* 12 * 18/10000),position=pd,size=2, shape=3, fill="blue")+
   facet_wrap(~moisture_levels, drop=TRUE,)+
   geom_hline(yintercept = 0, size=.5, linetype = 2)+
   coord_cartesian(xlim = c(0, 25))+
@@ -358,7 +348,7 @@ ggplot() +
 
   geom_point(data = Daily_A_114 , aes(x=PAR_Den_Avg, y=GPP*12*18/10000),position=pd,size=2, shape=21, fill="white")+
 
-  #geom_hline(yintercept = 0, size=.5, linetype = 2)+
+  geom_hline(yintercept = 0, size=.5, linetype = 2)+
 
   ylab(expression(paste(bold(" GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))+
   xlab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep=""))) +
@@ -399,7 +389,7 @@ Gr_PAR  = ggplot() +
   theme(axis.ticks.x = element_blank())
   #ggtitle("DRAW mean PAR")
 
-temp  =  AllData_A[AllData_A[['DateTime']] > as.POSIXct("2013-12-02") & AllData_A[['DateTime']] < as.POSIXct("2013-12-03"), ]
+temp  =  AllData_A$dt[AllData_A$dt[['DateTime']] > as.POSIXct("2013-12-02") & AllData_A$dt[['DateTime']] < as.POSIXct("2013-12-03"), ]
 ggplot() +
   geom_point(data =temp, aes(x=hour, y=SolElev), position=pd,size=3, shape=21, fill="white") +
   #coord_cartesian(ylim = c(0, 600)) +

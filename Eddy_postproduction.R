@@ -7,6 +7,7 @@ library('openair')
 library('ggthemes')
 library('pastecs')
 library("gridExtra")
+library("zoo") # hope temporary 
 # Reading Data Function
 adapt_complex_csv = function(data){
   temp_dataset = data
@@ -413,7 +414,10 @@ PlotWindRoses = function(EddyData, wind_speed, wind_dir)
   pollutionRose(EddyData, ws=wind_speed, wd=wind_dir, pollutant = "x_70%", type = "season", statistic = "prop.mean")
 }
 ma  = function(x,n=7){
-  filter(x,rep(1/n,n), sides=2)
+  #filter(x,rep(1/n,n), sides=2) - untill dplyr breaks filter function - we'll use zoo
+  #library("zoo")
+  
+  return(c(x[1:6],rollmean(x, n,align="right")))
 }
 
 daily_data = function(Data){
@@ -675,7 +679,17 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   #Read event filed and add event's masks
   WithEvents = add_events(events_file,FullData_with_Sep,'DateTime')
   # WindRose
-  AllData = list(dt = WithEvents, reddy = Reddyproc)
+  WithEvents$SWC_1 = as.numeric(WithEvents$SWC_1)
+  
+  WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
+  WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
+  hourly_data = hourly_data(WithEvents)
+  data_daily = daily_data(WithEvents)
+  data_weekly = weekly_data(WithEvents)
+  data_monthly = month_data(WithEvents)
+  
+  
+  AllData = list(dt = WithEvents, reddy = Reddyproc, hourly = hourly_data, daily = data_daily, weekly = data_weekly, monthly = data_monthly)
 
   return(AllData)
 }
