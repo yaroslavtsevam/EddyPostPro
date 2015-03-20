@@ -9,6 +9,11 @@ library('pastecs')
 library("gridExtra")
 library("zoo") # hope temporary 
 # Reading Data Function
+
+
+# adapt_complex_csv -------------------------------------------------------
+
+
 adapt_complex_csv = function(data){
   temp_dataset = data
   if (names(temp_dataset)[1] != "filename") {
@@ -42,6 +47,9 @@ na_percent = function(x) {
 df.mass.tonumeric = function(df) {
   return (lapply(joined_data, function(x){if(class(x)!="character"){x=as.numeric(x)}}))
 }
+
+# read_eddy_data ----------------------------------------------------------
+
 
 read_eddy_data = function(data_path)
 {
@@ -108,6 +116,9 @@ read_eddy_data = function(data_path)
   return (data.table(dataset))
 }
 
+# read_biomet_data --------------------------------------------------------
+
+
 read_biomet_data = function(data_path)
 {
   #setwd(data_path)
@@ -136,7 +147,10 @@ read_biomet_data = function(data_path)
   return (data.table(dataset))
 }
 
-# Fill gap by date
+
+
+# join_for_gapfilling - Fill gap bt date ----------------------------------
+
 
 join_for_gapfilling = function(data_,biometdata_){
   
@@ -239,6 +253,9 @@ join_for_gapfilling = function(data_,biometdata_){
   return(joined.tf)
 }
 
+
+# fill_gap_by_date  -------------------------------------------------------
+
 fill_gap_by_date  = function(oldData,TimeVariableName,newDataNumberofColumns){
   mask = as.numeric(oldData[[TimeVariableName]][2:length(oldData[[TimeVariableName]])])-as.numeric(oldData[[TimeVariableName]][1:(length(oldData[[TimeVariableName]])-1)]) == 1800
   gap_length = 0
@@ -266,6 +283,8 @@ fill_gap_by_date  = function(oldData,TimeVariableName,newDataNumberofColumns){
 }
 
 
+# footprint_for_angle -----------------------------------------------------
+
 
 footprint_for_angle = function(angle_v, ks_, bs_, xp_, yp_)
 {
@@ -290,6 +309,11 @@ footprint_for_angle = function(angle_v, ks_, bs_, xp_, yp_)
   footprint  = min(((ycs - yp_)^2+(xcs - xp_)^2)^.5)
   return(footprint)
 }
+
+
+# max_footprints ----------------------------------------------------------
+
+
 max_footprints = function(site_point, s_polygon, alldata, wind_var)
 {
   angle_vector = as.numeric(alldata[[wind_var]])
@@ -304,6 +328,8 @@ max_footprints = function(site_point, s_polygon, alldata, wind_var)
   A_max_footprints = sapply(angle_vector, function(x) footprint_for_angle(x, ks, bs, xp, yp))
   return(alldata[, max_footprint:= A_max_footprints])
 }
+
+# filter_by_quality -------------------------------------------------------
 
 
 filter_by_quality = function(join_,tower_height){
@@ -345,6 +371,10 @@ filter_by_quality = function(join_,tower_height){
   return(join_)
 }
 
+
+# reddyproc_gapfill  ------------------------------------------------------
+
+
 reddyproc_gapfill = function(join_){
   join_$NEE = as.numeric(join_$NEE)
   join_$LE = as.numeric(join_$LE)
@@ -380,6 +410,12 @@ reddyproc_extract_main_data = function(join_,EddyProc_){
   FullData_ = join_[TempDT[,c('sDateTime','NEE_f','Rg_f','LE_f','H_f','Tair_f','rH_f','VPD_f','Tsoil_f'), with=FALSE],roll=FALSE]
   return(FullData_)
 }
+
+
+
+# add_separators ----------------------------------------------------------
+
+
 add_separators = function(FullData_, lat, lon, zone){
   doy = as.integer(strftime(as.POSIXlt(FullData_[,1, with=FALSE][[1]]), format="%j"))
   dom = as.integer(strftime(as.POSIXlt(FullData_[,1, with=FALSE][[1]]), format="%d"))
@@ -396,6 +432,11 @@ add_separators = function(FullData_, lat, lon, zone){
   with_sep =  FullData_[separations[,c('sDateTime','Doy','DOM','hour','month_number','week','SolTime','SolDecl','SolElev'), with=FALSE],roll=FALSE]
   return(with_sep)
 }
+
+
+
+# PlotWindRoses -----------------------------------------------------------
+
 
 
 PlotWindRoses = function(EddyData, wind_speed, wind_dir)
@@ -419,6 +460,11 @@ ma  = function(x,n=7){
   
   return(c(x[1:6],rollmean(x, n,align="right")))
 }
+
+
+
+# daily_data --------------------------------------------------------------
+
 
 daily_data = function(Data){
   #Data = Data[[1]]
@@ -481,6 +527,10 @@ daily_data = function(Data){
 }
 
 
+
+# weekly_data -------------------------------------------------------------
+
+
 weekly_data = function(Data){
   new_names = c()
   #Data = Data[[1]]
@@ -513,6 +563,11 @@ weekly_data = function(Data){
   return(cbind(weekly_sums, weekly_means, weekly_errors))
 }
 #redo like day
+
+
+# month_data --------------------------------------------------------------
+
+
 month_data = function(Data){
   mnew_names = c()
   for (name in names(Data)){
@@ -543,31 +598,46 @@ month_data = function(Data){
   #add posix dates
   return(cbind(month_sums, month_means, month_errors))
 }
-###Hourly by month
+
+
+# hourly_data -------------------------------------------------------------
+
 hourly_data = function(AllData){
-  hour_means = c()
-  hour_errors = c()
-  hour_months  = c()
+  
   #AllData = AllData[[1]]
-
-  for (m in 1:12) {
-
-    Data = AllData[AllData$month_number == m,]
-
-    hour_mean = tapply(Data$NEE_f, Data$hour, mean)
-    #print(hour_mean)
-    hour_error = tapply(Data$NEE_f, Data$hour, sd)
-    hour_error = hour_error/sqrt(length(hour_error))*1.96
-    hour_month = rep(m, length(hour_error))
-    hour_means = c(hour_means, hour_mean)
-    hour_errors = c(hour_errors, hour_error)
-    hour_months  = c(hour_months, hour_month)
-
+  variables_names = names(AllData)[5:86]
+  #using plyr because it's already used by ggplot
+  hourly = list()
+  for (variable in variables_names)
+  {
+    hour_means = c()
+    hour_errors = c()
+    hour_months  = c()
+    for (m in 1:12) 
+    {  
+      Data = AllData[AllData$month_number == m,]
+      hour_mean = tapply(Data[[variable]], Data$hour, mean, na.rm=TRUE)
+      #print(hour_mean)
+      hour_error = tapply(Data[[variable]], Data$hour, sd, na.rm = TRUE)
+      hour_error = hour_error/sqrt(length(hour_error))*1.96
+      hour_month = rep(m, length(hour_error))
+      hour_means = c(hour_means, hour_mean)
+      hour_errors = c(hour_errors, hour_error)
+      hour_months  = c(hour_months, hour_month)
+      
+    }
+    hour = rep(0:23, length(hour_means)/24)
+    #print(hour)
+    
+    hourly[[which(variables_names == variable)]] =  data.frame(cbind(hour_means,hour_errors,hour_months,hour))   
   }
-  hour = rep(0:23, length(hour_means)/24)
-  #print(hour)
-  return(data.frame(cbind(hour_means,hour_errors,hour_months,hour)))
+  #setNames(hourly, variables_names)
+  names(hourly) = variables_names
+  return(hourly)
 }
+
+
+# hourly_NEE_period -------------------------------------------------------
 
 
 hourly_NEE_period = function(AllData,start_date,stop_date){
@@ -579,9 +649,9 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
   nmax = max(na.exclude(AllData[['month_number']]))
   nmin = min(na.exclude(AllData[['month_number']]))
   for (m in nmin:nmax) {
-
+    
     Data = AllData[AllData[['month_number']] == m,]
-
+    
     hour_mean = tapply(Data[['NEE_f']], Data$hour, mean)
     hour_error = tapply(Data[['NEE_f']], Data$hour, sd)
     hour_error = hour_error/sqrt(length(hour_error))*1.96
@@ -589,17 +659,19 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
     hour_means = c(hour_means, hour_mean)
     hour_errors = c(hour_errors, hour_error)
     hour_months  = c(hour_months, hour_month)
-
+    
   }
   hour = as.integer(names(hour_mean))
   return(data.frame(cbind(hour_means,hour_errors,hour_months,hour)))
 }
 
 
+# hourly_data_for_event ---------------------------------------------------
+
 hourly_data_for_event = function(AllData, event_name){
   hour_means = c()
   hour_errors = c()
-
+  
 
   Data = AllData[AllData[[event_name]],]
 
@@ -610,8 +682,6 @@ hourly_data_for_event = function(AllData, event_name){
   hour_means = c(hour_means, hour_mean)
   hour_errors = c(hour_errors, hour_error)
 
-
-
   hour = as.integer(names(hour_mean))
   return(data.frame(cbind(hour_means,hour_errors,hour)))
 }
@@ -619,6 +689,11 @@ ForMotherRussia = function(Data){
   Data[['DateTime']] = Data[['DateTime']] + as.difftime(-240, units="mins")
   return(Data)
 }
+
+
+
+# insert_event_mask  ------------------------------------------------------
+
 
 insert_event_mask = function(dt, datetime_column_name, event_start_date, event_stop_date, event_name){
   if (class(event_start_date)[1] == "POSIXct" && class(event_stop_date)[1] == "POSIXct") {
@@ -633,6 +708,9 @@ insert_event_mask = function(dt, datetime_column_name, event_start_date, event_s
     return (NULL)
   }
 }
+
+
+# add_event ---------------------------------------------------------------
 
 
 add_events = function(events_file, allData, DateVarName){
@@ -653,6 +731,9 @@ add_events = function(events_file, allData, DateVarName){
 #+++ Aligning biomet and eddypro data to data.table
 
 #================================================================================
+
+# FullEddyPostProcess -----------------------------------------------------
+
 
 FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCoordZone, tower_height){
   # Reading Data
@@ -693,6 +774,10 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
 
   return(AllData)
 }
+
+
+
+
 #package.skeleton(list = c("read_eddy_data","read_biomet_data","join_for_gapfilling","max_footprints","filter_by_quality","reddyproc_gapfill","add_separators","add_events","PlotWindRoses","footprint_for_angle","fill_gap_by_date"), name = "EddyPostProcess")
 
 

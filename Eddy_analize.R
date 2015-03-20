@@ -78,7 +78,7 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 } 
 
 
-compare_plot(list(hourly_data_As,hourly_data_Bs), "hour", "hour_means","facet")
+compare_plot(list(AllData_A$hourly,AllData_B$hourly), "hour", "hour_means","facet")
 hourly_data_As$hour_months
 
 
