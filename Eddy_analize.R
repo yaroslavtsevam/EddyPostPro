@@ -95,6 +95,7 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 # All types of graphs -----------------------------------------------------
 ###TODO Remake all types of graphs with compare plot
 ###TODO Add function of fast subseting tower by period - make function period
+###TODO Extract Reco and GPP from Reddy and add to dt, compare it with mine
 
 compare_plot(list(AllData_A$hourly$NEE_f,AllData_B$hourly$NEE_f), "hour", "hour_means","facet")
 
