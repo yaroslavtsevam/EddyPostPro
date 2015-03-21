@@ -1,5 +1,11 @@
+
+# Loading postproduction --------------------------------------------------
+
 source(file="Eddy_postproduction.r", local=TRUE)
-#function = DrawVariablesbyMonth(){}
+
+
+# Loading towers metadata -------------------------------------------------
+###TODO: Make metdata loadable from tower folder
 
 DataFolderA = 'Data_A/'
 DataFolderB = 'Data_B/'
@@ -51,16 +57,22 @@ Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE
 
 
 
+
+# compare_plot ------------------------------------------------------------
+
+
 compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
   pd = position_dodge(.1)
+  shape_list = c(15,21,17,19)
   graph = ggplot()
-  for (tower in tower_list) {
-    graph = graph + geom_line(data = tower, aes_string(x=x_variable, y=y_variable),position=pd,size=.5)
-    graph = graph + geom_point(data = tower, aes_string(x=x_variable, y=y_variable),position=pd,size=2)
+  for (n in 1:length(tower_list)) {
+    
+    graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=n, size=.5)
+    graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
   
   
     if (errorbar){
-      graph =graph + geom_errorbar(data = tower, aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
+      graph =graph + geom_errorbar(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
     }
   } 
   graph =graph +geom_hline(yintercept = 0, linetype=2)
@@ -78,8 +90,14 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 } 
 
 
-compare_plot(list(AllData_A$hourly$Tair,AllData_B$hourly$Tair), "hour", "hour_means","facet")
-hourly_data_As$hour_months
+
+
+# All types of graphs -----------------------------------------------------
+###TODO Remake all types of graphs with compare plot
+###TODO Add function of fast subseting tower by period - make function period
+
+compare_plot(list(AllData_A$hourly$NEE_f,AllData_B$hourly$NEE_f), "hour", "hour_means","facet")
+
 
 
 
