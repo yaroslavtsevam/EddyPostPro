@@ -66,28 +66,40 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
   shape_list = c(15,21,17,19)
   graph = ggplot()
   for (n in 1:length(tower_list)) {
-    
-    graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=n, size=.5)
-    graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
-  
-  
+
+    if (type=="diurnal") {
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=n, size=.5)
+      graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
+      if (type=="cumul") {
+        graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=cumsum((y_variable * 12*18 /10000))), position=pd,linetype=n, size=.5)
+        #graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
+
     if (errorbar){
       graph =graph + geom_errorbar(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
     }
-  } 
+  }
   graph =graph +geom_hline(yintercept = 0, linetype=2)
   if (type=="facet") {
     graph =graph +facet_wrap(grouping_varaible, ncol = 3)
+
   }
+
+  if (type=="diurnal") {
+    graph =graph +facet_wrap(grouping_varaible, ncol = 3)
+
+  }
+
+
+
   graph =graph +xlab(xlab)
   graph =graph +ylab(ylab)
   graph =graph +theme_few(base_size = 15, base_family = "serif")
   graph =graph +theme(axis.title.y = element_text(size = 15, face="bold"))
   graph =graph +theme(axis.title.x = element_text(size =15, face="bold"))
-  graph =graph +ggtitle(title)  
-  
+  graph =graph +ggtitle(title)
+
   return(graph)
-} 
+}
 
 
 
@@ -96,9 +108,15 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 ###TODO Remake all types of graphs with compare plot
 ###TODO Add function of fast subseting tower by period - make function period
 
-compare_plot(list(AllData_A$hourly$NEE_f,AllData_B$hourly$NEE_f), "hour", "hour_means","facet")
+
+#  NEE_f for several towers, diurnal ---------------------------------------
+
+compare_plot(list(AllData_A$hourly$NEE_f,AllData_B$hourly$NEE_f), "hour", "hour_means","diurnal")
 
 
+# NEE_f cumulation forseveral towers total --------------------------------
+
+compare_plot(list(AllData_A$daily,AllData_B$daily), "Doy", "NEE_f_sums","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
 
 
 
