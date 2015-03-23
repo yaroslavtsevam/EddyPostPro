@@ -7,7 +7,7 @@ library('openair')
 library('ggthemes')
 library('pastecs')
 library("gridExtra")
-library("zoo") # hope temporary 
+library("zoo") # hope temporary
 # Reading Data Function
 
 
@@ -41,7 +41,7 @@ adapt_complex_csv = function(data){
 }
 
 na_percent = function(x) {
-  
+
   return(length(which(is.na(x)))/length(x))
 }
 df.mass.tonumeric = function(df) {
@@ -88,24 +88,24 @@ read_eddy_data = function(data_path)
     # if the merged dataset doesn't exist, create it
     if (!exists("dataset")){
       print(paste(paste("File",file, sep = " "), "read", sep=" "))
-      dataset = tryCatch({      
+      dataset = tryCatch({
                 fread(file, header = "auto", autostart = 60, skip=1)
-              }, 
+              },
         warning = function(war) {
                 # warning handler picks up where error was generated
                 print(paste("MY_WARNING:  ",war))
                 return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
-              }, 
+              },
         error = function(err) {
                 # error handler picks up where error was generated
                 print(paste("MY_ERROR:  ",err))
                 return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
-              }, 
-        finally = {        
+              },
+        finally = {
                 print(paste("File read:",file))
               })
-      
-      
+
+
       #temp_dataset_startline = which(as.character(dataset$daytime) == "T" | as.character(dataset$daytime) == "F")[1];
       #dataset = dataset[temp_dataset_startline:length(dataset[['DOY']]), ]
       dataset = adapt_complex_csv(dataset)
@@ -153,7 +153,7 @@ read_biomet_data = function(data_path)
 
 
 join_for_gapfilling = function(data_,biometdata_){
-  
+
   data_[data_ == -9999.0] = NA
   biometdata_[['TIMESTAMP']] = as.POSIXct(as.POSIXlt(biometdata_[['TIMESTAMP']],format="%Y-%m-%d %H:%M:%S", tz="MSK"))
 
@@ -181,13 +181,13 @@ join_for_gapfilling = function(data_,biometdata_){
                           as.numeric(data_[['rand_err_co2_flux']]),
                           as.numeric(data_[['qc_co2_flux']]))
 
- 
-  
+
+
   names(EddyData.F) = c('Year','DoY','Hour','date','NEE','H2O_NEE','LE','H','Tair','rH','VPD','Ustar','wind_speed','wind_dir','x_70%','x_90%','QF_h2o','rand_err_h2o_flux','rand_err_co2_flux','QF')
   EddyDataWithPosix.F <- fConvertTimeToPosix(na.exclude(EddyData.F), 'YDH', Year.s='Year', Day.s='DoY', Hour.s='Hour')
-  
+
   print(lapply(EddyDataWithPosix.F,class))
-  
+
   EddyDataWithPosixNew.F = data.table(fill_gap_by_date(EddyDataWithPosix.F,"DateTime",21))
   print("Filled gaps")
   setnames(biometdata_,'TIMESTAMP','DateTime')
@@ -195,9 +195,9 @@ join_for_gapfilling = function(data_,biometdata_){
   setkey(EddyDataWithPosixNew.F,'DateTime')
 
   joined = merge(biometdata_[,c(1:57), with=FALSE],EddyDataWithPosixNew.F, all=TRUE, by=c('DateTime'),allow.cartesian=TRUE)
-  
- 
-  
+
+
+
   #join = EddyDataWithPosixNew.F[biometdata_[,c(1,5,6,7,8,15,16,17,20,23,33,36,37,38,39,40,44,45,46,47,48,49,50,51,52,53,54,56,57), with=FALSE],roll=FALSE]
   print('Joined')
   #Converting column names to satisfy REddyProc convention
@@ -232,9 +232,9 @@ join_for_gapfilling = function(data_,biometdata_){
     print( length(which(duplicated(joined))) )
     joined = joined[!which(duplicated(joined))]
   }
-  
- 
-  
+
+
+
   print("Starting big Gap fill")
   joined.tf = fill_gap_by_date(joined,"DateTime",77)
   print('Stoped big gap fill')
@@ -247,9 +247,9 @@ join_for_gapfilling = function(data_,biometdata_){
   if ( length(which(is.na(joined.tf[['DateTime']]))) > 0 ) {
     joined.tf = joined.tf[!which(is.na(joined.tf[['DateTime']]))]
   }
-  
 
-  
+
+
   return(joined.tf)
 }
 
@@ -457,7 +457,7 @@ PlotWindRoses = function(EddyData, wind_speed, wind_dir)
 ma  = function(x,n=7){
   #filter(x,rep(1/n,n), sides=2) - untill dplyr breaks filter function - we'll use zoo
   #library("zoo")
-  
+
   return(c(x[1:6],rollmean(x, n,align="right")))
 }
 
@@ -481,20 +481,23 @@ daily_data = function(Data){
         daily_sums = cbind(daily_sums, daily_sum)
         daily_means = cbind(daily_means, daily_mean)
         daily_errors = cbind(daily_errors, daily_error)
+
       }
       else{
         daily_sums = data.frame(daily_sum)
         daily_means = data.frame(daily_mean)
         daily_errors = data.frame(daily_error)
-        
+
       }
       new_names = c(new_names,name)
     }
   }
+  daily_cumsums_g  = cum_sum(daily_sum) *12 *18 /10000
+
   names(daily_sums) = paste(new_names,"sums", sep="_")
   names(daily_means) = new_names
   names(daily_errors) = paste(new_names,"errors", sep="_")
-
+  names(daily_cumsums_g) = paste(new_names,"cumsum", sep="_")
 #  PAR_margin_for_night = 5
  # Reco  = as.vector(by(Data[,c("NEE_f","PAR_Den_Avg"), with=FALSE], Data$Doy, function(x) mean(x[['NEE_f']][x[['PAR_Den_Avg']] < PAR_margin_for_night & x[['NEE_f']] > 0], na.rm=TRUE)*48 ))
 #  GPP  = as.vector(by(Data[,c("NEE_f","PAR_Den_Avg"), with=FALSE], Data$Doy, function(x) {
@@ -507,10 +510,10 @@ daily_data = function(Data){
     y = mean(x[['NEE_f']][x[['SolElev']] < 0 & x[['NEE_f']] > 0 ], na.rm=TRUE) - x[['NEE_f']][x[['SolElev']] > 0 ]
     return(sum( y[y>0], na.rm=TRUE))}
   ))
-  Reco[Reco == 'NaN'] =0
+  Reco[Reco == 'NaN'] = 0
   Reco[Reco == 'NA'] = 0
   Reco[Reco == NA] = 0
-  GPP[GPP == 'NaN'] =0
+  GPP[GPP == 'NaN'] = 0
   GPP[GPP == 'NA'] = 0
   GPP[GPP == NA] = 0
 
@@ -520,9 +523,10 @@ daily_data = function(Data){
   NA_marker[NA_marker < 16] = 1
 
   NA_marker[NA_marker >= 16] = 0.1
-
+  Reco_sum = cumsum(Reco *12*18/10000)
+  GPP_sum = cumsum(GPP *12*18/10000)
   #add posix dates
-  return(cbind(daily_sums, daily_means,daily_errors, NA_count,NA_marker, Reco, GPP))
+  return(cbind(daily_sums, daily_means,daily_errors,daily_cumsums_g, NA_count,NA_marker, Reco, GPP, Reco_sum, GPP_sum ))
   #return(cbind(daily_sums, daily_means,daily_errors))
 }
 
@@ -535,9 +539,9 @@ weekly_data = function(Data){
   new_names = c()
   #Data = Data[[1]]
   for (name in names(Data)){
-    
+
     if ((class(Data[[name]])[1] == 'numeric' ) | (class(Data[[name]])[1] == 'integer' ) | (class(Data[[name]])[1] == 'character' )){
-      
+
       weekly_sum = tapply(as.numeric(Data[[name]]), Data$week, sum, na.rm = TRUE)
       weekly_mean = tapply(as.numeric(Data[[name]]), Data$week, mean, na.rm = TRUE)
       weekly_error = tapply(as.numeric(Data[[name]]), Data$week, sd)
@@ -603,7 +607,7 @@ month_data = function(Data){
 # hourly_data -------------------------------------------------------------
 
 hourly_data = function(AllData){
-  
+
   #AllData = AllData[[1]]
   variables_names = names(AllData)[5:86]
   #using plyr because it's already used by ggplot
@@ -613,8 +617,8 @@ hourly_data = function(AllData){
     hour_means = c()
     hour_errors = c()
     hour_months  = c()
-    for (m in 1:12) 
-    {  
+    for (m in 1:12)
+    {
       Data = AllData[AllData$month_number == m,]
       hour_mean = tapply(Data[[variable]], Data$hour, mean, na.rm=TRUE)
       #print(hour_mean)
@@ -624,12 +628,12 @@ hourly_data = function(AllData){
       hour_means = c(hour_means, hour_mean)
       hour_errors = c(hour_errors, hour_error)
       hour_months  = c(hour_months, hour_month)
-      
+
     }
     hour = rep(0:23, length(hour_means)/24)
     #print(hour)
-    
-    hourly[[which(variables_names == variable)]] =  data.frame(cbind(hour_means,hour_errors,hour_months,hour))   
+
+    hourly[[which(variables_names == variable)]] =  data.frame(cbind(hour_means,hour_errors,hour_months,hour))
   }
   #setNames(hourly, variables_names)
   names(hourly) = variables_names
@@ -649,9 +653,9 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
   nmax = max(na.exclude(AllData[['month_number']]))
   nmin = min(na.exclude(AllData[['month_number']]))
   for (m in nmin:nmax) {
-    
+
     Data = AllData[AllData[['month_number']] == m,]
-    
+
     hour_mean = tapply(Data[['NEE_f']], Data$hour, mean)
     hour_error = tapply(Data[['NEE_f']], Data$hour, sd)
     hour_error = hour_error/sqrt(length(hour_error))*1.96
@@ -659,7 +663,7 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
     hour_means = c(hour_means, hour_mean)
     hour_errors = c(hour_errors, hour_error)
     hour_months  = c(hour_months, hour_month)
-    
+
   }
   hour = as.integer(names(hour_mean))
   return(data.frame(cbind(hour_means,hour_errors,hour_months,hour)))
@@ -671,7 +675,7 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
 hourly_data_for_event = function(AllData, event_name){
   hour_means = c()
   hour_errors = c()
-  
+
 
   Data = AllData[AllData[[event_name]],]
 
@@ -739,7 +743,7 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   # Reading Data
   data = read_eddy_data(DataFolder)
   biometdata = read_biomet_data(DataFolder)
-  
+
   # Forming data set for gap filling
   joined_data = join_for_gapfilling(data, biometdata)
 
@@ -747,7 +751,7 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   joined_data = max_footprints(SiteUTM, SitePolygon, joined_data,'wind_dir')
   # Pre Gap filling Filtering
   joined_data[, setdiff(colnames(joined_data),"DateTime")] <- as.data.table(sapply( joined_data[, setdiff(colnames(joined_data),"DateTime"), with=FALSE], as.numeric))
-  
+
   join.filtered = filter_by_quality(joined_data,tower_height)
 
   #+++ Fill gaps in variables with MDS gap filling algorithm
@@ -761,15 +765,15 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   WithEvents = add_events(events_file,FullData_with_Sep,'DateTime')
   # WindRose
   WithEvents$SWC_1 = as.numeric(WithEvents$SWC_1)
-  
+
   WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   hourly_data = hourly_data(WithEvents)
   data_daily = daily_data(WithEvents)
   data_weekly = weekly_data(WithEvents)
   data_monthly = month_data(WithEvents)
-  
-  
+
+
   AllData = list(dt = WithEvents, reddy = Reddyproc, hourly = hourly_data, daily = data_daily, weekly = data_weekly, monthly = data_monthly)
 
   return(AllData)
