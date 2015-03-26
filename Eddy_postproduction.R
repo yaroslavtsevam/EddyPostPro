@@ -23,19 +23,19 @@ adapt_complex_csv = function(data){
     print('Names gotten')
   }
 
-    temp_dataset_startline = which(as.character(temp_dataset$daytime) == "T" | as.character(temp_dataset$daytime) == "F")[1];
-    temp_dataset = temp_dataset[temp_dataset_startline:length(temp_dataset[['date']]), ]
-    print('Removing junk data')
-    print("Checking data")
-    print(temp_dataset$date[1:10])
-    if (gregexpr(pattern ='\\.', as.character(temp_dataset[['date']][1]))[[1]][1] > -1) {
+  temp_dataset_startline = which(as.character(temp_dataset$daytime) == "T" | as.character(temp_dataset$daytime) == "F")[1];
+  temp_dataset = temp_dataset[temp_dataset_startline:length(temp_dataset[['date']]), ]
+  print('Removing junk data')
+  print("Checking data")
+  print(temp_dataset$date[1:10])
+  if (gregexpr(pattern ='\\.', as.character(temp_dataset[['date']][1]))[[1]][1] > -1) {
     temp_dataset[['date']] = paste(substr(temp_dataset[['date']],7,10),substr(temp_dataset[['date']],4,5),substr(temp_dataset[['date']],1,2),sep="-")
     print('New date constructed')
   }
 
 
 
-    #print(temp_dataset)
+  #print(temp_dataset)
 
   return(temp_dataset)
 }
@@ -76,8 +76,8 @@ read_eddy_data = function(data_path)
       start_date_temp = min(as.double(temp_dataset[['DOY']]), na.rm=TRUE)
       print( paste("Start date:", start_date_temp, sep=" "))
       if (start_date_temp < stop_date_data) {
-         temp_dataset = temp_dataset[as.double(temp_dataset[['DOY']]) > stop_date_data ]
-         print( paste("Rows read:",length(temp_dataset[['DOY']]), sep=" "))
+        temp_dataset = temp_dataset[as.double(temp_dataset[['DOY']]) > stop_date_data ]
+        print( paste("Rows read:",length(temp_dataset[['DOY']]), sep=" "))
       }
       print( paste("Rows read:",length(temp_dataset[['DOY']]), sep=" "))
       print(dataset$date[1])
@@ -89,21 +89,21 @@ read_eddy_data = function(data_path)
     if (!exists("dataset")){
       print(paste(paste("File",file, sep = " "), "read", sep=" "))
       dataset = tryCatch({
-                fread(file, header = "auto", autostart = 60, skip=1)
-              },
-        warning = function(war) {
-                # warning handler picks up where error was generated
-                print(paste("MY_WARNING:  ",war))
-                return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
-              },
-        error = function(err) {
-                # error handler picks up where error was generated
-                print(paste("MY_ERROR:  ",err))
-                return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
-              },
-        finally = {
-                print(paste("File read:",file))
-              })
+        fread(file, header = "auto", autostart = 60, skip=1)
+      },
+      warning = function(war) {
+        # warning handler picks up where error was generated
+        print(paste("MY_WARNING:  ",war))
+        return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
+      },
+      error = function(err) {
+        # error handler picks up where error was generated
+        print(paste("MY_ERROR:  ",err))
+        return(fread(file, header = "auto", autostart = 60, skip=1, sep=";"))
+      },
+      finally = {
+        print(paste("File read:",file))
+      })
 
 
       #temp_dataset_startline = which(as.character(dataset$daytime) == "T" | as.character(dataset$daytime) == "F")[1];
@@ -126,7 +126,7 @@ read_biomet_data = function(data_path)
 
   for (file in file_list){
 
-   # if the merged dataset does exist, append to it
+    # if the merged dataset does exist, append to it
     if (exists("dataset")){
       temp_dataset = fread(file, header = "auto", autostart = 60, skip=1)
       temp_dataset_startline = grep(":",temp_dataset$TIMESTAMP)[1];
@@ -492,18 +492,18 @@ daily_data = function(Data){
       new_names = c(new_names,name)
     }
   }
-  daily_cumsums_g  = cum_sum(daily_sum) *12 *18 /10000
+  daily_cumsums_g  = cumsum(daily_sums) *12 *18 /10000
 
   names(daily_sums) = paste(new_names,"sums", sep="_")
   names(daily_means) = new_names
   names(daily_errors) = paste(new_names,"errors", sep="_")
   names(daily_cumsums_g) = paste(new_names,"cumsum", sep="_")
-#  PAR_margin_for_night = 5
- # Reco  = as.vector(by(Data[,c("NEE_f","PAR_Den_Avg"), with=FALSE], Data$Doy, function(x) mean(x[['NEE_f']][x[['PAR_Den_Avg']] < PAR_margin_for_night & x[['NEE_f']] > 0], na.rm=TRUE)*48 ))
-#  GPP  = as.vector(by(Data[,c("NEE_f","PAR_Den_Avg"), with=FALSE], Data$Doy, function(x) {
-#    y = mean(x[['NEE_f']][x[['PAR_Den_Avg']] < PAR_margin_for_night & x[['NEE_f']] > 0 ], na.rm=TRUE) - x[['NEE_f']][x[['PAR_Den_Avg']] > PAR_margin_for_night ]
-#    return(sum( y[y>0], na.rm=TRUE))}
-#   ))
+  #  PAR_margin_for_night = 5
+  # Reco  = as.vector(by(Data[,c("NEE_f","PAR_Den_Avg"), with=FALSE], Data$Doy, function(x) mean(x[['NEE_f']][x[['PAR_Den_Avg']] < PAR_margin_for_night & x[['NEE_f']] > 0], na.rm=TRUE)*48 ))
+  #  GPP  = as.vector(by(Data[,c("NEE_f","PAR_Den_Avg"), with=FALSE], Data$Doy, function(x) {
+  #    y = mean(x[['NEE_f']][x[['PAR_Den_Avg']] < PAR_margin_for_night & x[['NEE_f']] > 0 ], na.rm=TRUE) - x[['NEE_f']][x[['PAR_Den_Avg']] > PAR_margin_for_night ]
+  #    return(sum( y[y>0], na.rm=TRUE))}
+  #   ))
 
   Reco  = as.vector(by(Data[,c("NEE_f","SolElev"), with=FALSE], Data$Doy, function(x) mean(x[['NEE_f']][x[['SolElev']] < 0 & x[['NEE_f']] > 0], na.rm=TRUE)*48 ))
   GPP  = as.vector(by(Data[,c("NEE_f","SolElev"), with=FALSE], Data$Doy, function(x) {
@@ -721,12 +721,12 @@ add_events = function(events_file, allData, DateVarName){
   with_events = allData
   if (file.exists(events_file))
   {
-      allevents = fread(events_file, header = "auto", sep = "auto")
-      for (i in 1:length(allevents[,1, with=FALSE][[1]])){
-        start_date = as.POSIXct(as.character(allevents[i,1, with =FALSE]))
-        stop_date  = as.POSIXct(as.character(allevents[i,2, with =FALSE]))
-        with_events = insert_event_mask(with_events,DateVarName,start_date,stop_date,as.character(allevents[i,3, with =FALSE]))
-  }
+    allevents = fread(events_file, header = "auto", sep = "auto")
+    for (i in 1:length(allevents[,1, with=FALSE][[1]])){
+      start_date = as.POSIXct(as.character(allevents[i,1, with =FALSE]))
+      stop_date  = as.POSIXct(as.character(allevents[i,2, with =FALSE]))
+      with_events = insert_event_mask(with_events,DateVarName,start_date,stop_date,as.character(allevents[i,3, with =FALSE]))
+    }
   }else {
     print("No events file found")
   }
@@ -775,10 +775,50 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
 
 
   AllData = list(dt = WithEvents, reddy = Reddyproc, hourly = hourly_data, daily = data_daily, weekly = data_weekly, monthly = data_monthly)
+  setkey(AllData$dt, 'DateTime')
 
   return(AllData)
 }
 
+
+
+# compare_plot ------------------------------------------------------------
+
+
+compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
+  pd = position_dodge(.1)
+  shape_list = c(15,21,17,19)
+  linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  graph = ggplot()
+  for (n in 1:length(tower_list)) {
+
+    if (type=="diurnal") {
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=.5)
+      graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)}
+    if (type=="cumul") {
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x = x_variable, y=y_variable), position=pd,linetype=linetypes[n], size=.5  )
+    }
+    #graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
+    if (errorbar){
+      graph =graph + geom_errorbar(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
+    }
+  }
+
+  graph =graph +geom_hline(yintercept = 0, linetype=2)
+
+  if (type=="diurnal") {
+    graph =graph +facet_wrap(grouping_varaible, ncol = 3)
+  }
+
+  graph =graph +xlab(xlab)
+  graph =graph +ylab(ylab)
+  graph =graph +theme_few(base_size = 15, base_family = "serif")
+  graph =graph +theme(axis.title.y = element_text(size = 15, face="bold"))
+  graph =graph +theme(axis.title.x = element_text(size =15, face="bold"))
+  graph =graph +ggtitle(title)
+
+  return(graph)
+}
 
 
 

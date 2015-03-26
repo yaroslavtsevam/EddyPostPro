@@ -7,8 +7,10 @@ source(file="Eddy_postproduction.r", local=TRUE)
 # Loading towers metadata -------------------------------------------------
 ###TODO: Make metdata loadable from tower folder
 
-DataFolderA = 'Data_A/'
-DataFolderB = 'Data_B/'
+DataFolderA_13 = 'Data_A/'
+DataFolderB_13 = 'Data_B/'
+DataFolderA_14 = 'Data_A/'
+DataFolderB_14 = 'Data_B/'
 Site_A = c(410041, 6188869)
 Site_B = c(410155, 6188893)
 site_polygon  = data.frame(as.numeric(c(409957,410179,410243,410014)),as.numeric(c(6188984,6189058,6188849,6188774)))
@@ -24,17 +26,23 @@ All_towers_height  = 1.5
 
 
 
-AllData_A = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+AllData_A_13 = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
-AllData_B = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-save(AllData_B, file="AllData_B_2013")
+AllData_B_13 = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
+#save(AllData_B, file="AllData_B_2013")
+AllData_A_14 = FullEddyPostProcess (DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
-setkey(AllData_A$dt, 'DateTime')
-setkey(AllData_B$dt, 'DateTime')
+AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
+
+
+
+#save(AllData_B, file="AllData_B_2013")
+
 
 
 #Adding PAR to site B as soon they very close
-AllData_B$dt = merge(AllData_B$dt,AllData_A$dt[,c(1,40),with=FALSE], by = 'DateTime')
+AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with=FALSE], by = 'DateTime')
+AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with=FALSE], by = 'DateTime')
 
 #new_names = paste(names(AllData_A),"_a", sep="")
 #names(AllData_A) = new_names
@@ -58,59 +66,6 @@ Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE
 
 
 
-# compare_plot ------------------------------------------------------------
-
-
-compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
-  pd = position_dodge(.1)
-  shape_list = c(15,21,17,19)
-  graph = ggplot()
-  for (n in 1:length(tower_list)) {
-
-    if (type=="diurnal") {
-      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=n, size=.5)
-      graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)}
-
-
-      if (type=="cumul") {
-
-        graph = graph + geom_line( aes(x = tower_list[[n]][x_variable], y=cumsum(tower_list[[n]][y_variable] ), position=pd,linetype=n, size=.5  ))
-      }
-        #graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
-
-
-
-    if (errorbar){
-      graph =graph + geom_errorbar(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
-    }
-
-
-  }
-
-  graph =graph +geom_hline(yintercept = 0, linetype=2)
-
-
-  if (type=="facet") {
-    graph =graph +facet_wrap(grouping_varaible, ncol = 3)
-
-  }
-
-  if (type=="diurnal") {
-    graph =graph +facet_wrap(grouping_varaible, ncol = 3)
-
-  }
-
-
-
-  graph =graph +xlab(xlab)
-  graph =graph +ylab(ylab)
-  graph =graph +theme_few(base_size = 15, base_family = "serif")
-  graph =graph +theme(axis.title.y = element_text(size = 15, face="bold"))
-  graph =graph +theme(axis.title.x = element_text(size =15, face="bold"))
-  graph =graph +ggtitle(title)
-
-  return(graph)
-}
 
 
 
@@ -122,12 +77,12 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 
 #  NEE_f for several towers, diurnal ---------------------------------------
 
-compare_plot(list(AllData_A$hourly$NEE_f,AllData_B$hourly$NEE_f), "hour", "hour_means","diurnal")
+compare_plot(list(AllData_A_14$hourly$NEE_f,AllData_B_14$hourly$NEE_f), "hour", "hour_means","diurnal")
 
 
 # NEE_f cumulation forseveral towers total --------------------------------
-
-compare_plot(list(AllData_A$daily,AllData_B$daily), "Doy", "NEE_f_cumsum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+#source(file="Eddy_postproduction.r", local=TRUE)
+compare_plot(list(AllData_A_14$daily,AllData_B_14$daily), "DoY", "NEE_f_cumsum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
 
 
 
