@@ -458,7 +458,7 @@ ma  = function(x,n=7){
   #filter(x,rep(1/n,n), sides=2) - untill dplyr breaks filter function - we'll use zoo
   #library("zoo")
 
-  return(c(x[1:6],rollmean(x, n,align="right")))
+  return(c(x[1:6],rollmean(x, n,align="right",na.pad = FALSE)))
 }
 
 
@@ -775,6 +775,7 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
 
 
   AllData = list(dt = WithEvents, reddy = Reddyproc, hourly = hourly_data, daily = data_daily, weekly = data_weekly, monthly = data_monthly)
+  AllData$dt$moisture_levels = cut(AllData$dt$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   setkey(AllData$dt, 'DateTime')
 
   return(AllData)
@@ -787,13 +788,13 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
 
 compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
   pd = position_dodge(.1)
-  shape_list = c(15,21,17,19)
+  shape_list = factor(15,21,17,19)
   linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   graph = ggplot()
   for (n in 1:length(tower_list)) {
 
     if (type=="diurnal") {
-      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=.5)
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=.75)
       graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)}
     if (type=="cumul") {
       graph = graph + geom_line(data = tower_list[[n]], aes_string(x = x_variable, y=y_variable), position=pd,linetype=linetypes[n], size=.5  )
@@ -822,6 +823,234 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 
 
 
+PlotDiurnal = function(DataList) {
+  pd = position_dodge(.1)
+  shape_list = as.factor(c(5,7,17,19,15,21))
+  DP = ggplot()
+  linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  for (n in 1:length(DataList)) {
+    DP = DP + geom_errorbar(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
+    DP = DP + geom_line(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=.5, linetype=linetypes[n])
+    DP = DP + geom_point(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=2, shape=shape_list[n], fill=2)
+  }
+  DP = DP + geom_hline(yintercept = 0, linetype=2)
+  DP = DP + facet_wrap(~hour_months, ncol =3)
+  DP = DP + xlab("Time of day (Hour)")
+  DP = DP + ylab(expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")))
+  #μmol CO2 m-2s-1)")
+  DP = DP + theme_few(base_size = 15, base_family = "serif")
+  DP = DP + theme(axis.title.y = element_text(size = 15, face="bold"))
+  DP = DP + theme(axis.title.x = element_text(size =15, face="bold")) #
+  DP = DP + ggtitle("NEE_f for two towers, hourly")
+  return(DP)
+}
+
+
+
+PlotBiomet = function(DataList) {
+
+
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = as.factor(c(15,21,17,19))
+  Gr_PAR = ggplot()
+  Gr_Tsoil = ggplot()
+  Gr_water = ggplot()
+  for(n in 1:length(DataList)) {
+    if (!is.null( DataList[[n]]$daily$PAR_Den_Avg)) {
+      pd = position_dodge(.1*n)
+      Gr_PAR = Gr_PAR + geom_line(data =  DataList[[n]]$daily , aes(x=Doy, y=ma(PAR_Den_Avg)),position=pd,linetype=linetypes[n])
+      Gr_PAR = Gr_PAR + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=PAR_Den_Avg),position=pd,size=2, shape=shape_list[n], fill=1, alpha = (.4+.15*n))
+    }
+    if (!is.null( DataList[[n]]$daily$Tsoil_f)) {
+      Gr_Tsoil = Gr_Tsoil + geom_line(data = DataList[[n]]$daily , aes(x=Doy, y=ma(Tsoil_f)),position=pd,linetype=linetypes[n], size=.8)
+      Gr_Tsoil = Gr_Tsoil + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Tsoil_f),position=pd,size=2, shape=shape_list[n], fill=1,alpha=.5)
+    }
+    if (!is.null( DataList[[n]]$daily$SWC_1)) {
+      Gr_water = Gr_water + geom_line(data =  DataList[[n]]$daily, aes(x=Doy, y=ma(SWC_1*100)),position=pd,,linetype=linetypes[n])
+      Gr_water = Gr_water + geom_point(data = DataList[[n]]$daily, aes(x=Doy, y=(SWC_1*100)),position=pd,size=2, shape=shape_list[n], fill=1,alpha=.3)
+    }
+    if (!is.null( DataList[[n]]$daily$Rain_mm_Tot_sums)){
+      Gr_water = Gr_water + geom_rect(data =  DataList[[n]]$daily, aes(x=Doy,xmin=Doy-1,xmax=Doy+1, y=Rain_mm_Tot_sums, ymin=0, xmin=3), fill=1, position=pd, size=3,alpha=(.4+.15*n))
+    }
+  }
+  Gr_PAR = Gr_PAR + coord_cartesian( ylim = c(0,595))
+  Gr_PAR = Gr_PAR + xlab("Day of the year")
+  Gr_PAR = Gr_PAR + ylab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep="")))
+  #geom_vline(xintercept = 163, size=1, alpha=1)+
+  Gr_PAR = Gr_PAR + theme_few(base_size = 18, base_family = "serif")
+  Gr_PAR = Gr_PAR + theme(axis.title.y = element_text(size = 16, face="bold"))
+  Gr_PAR = Gr_PAR + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_PAR = Gr_PAR + theme(axis.title.x = element_blank())
+  Gr_PAR = Gr_PAR + theme(axis.text.x = element_blank())
+  Gr_PAR = Gr_PAR + theme(axis.ticks.x = element_blank())
+  #ggtitle("DRAW mean PAR")
+
+  Gr_Tsoil = Gr_Tsoil + xlab("Day of the year")
+  Gr_Tsoil = Gr_Tsoil + ylab(expression(bold(paste(T["soil"]," at 5cm depth "," (", ring("C"),")",sep=""))))
+  #geom_vline(xintercept = 163, size=3, alpha=.2)
+  Gr_Tsoil = Gr_Tsoil + theme_few(base_size = 18, base_family = "serif")
+  Gr_Tsoil = Gr_Tsoil + theme(axis.title.y = element_text(size = 16, face="bold"))
+  Gr_Tsoil = Gr_Tsoil + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Tsoil = Gr_Tsoil + theme(axis.title.x = element_blank())
+  Gr_Tsoil = Gr_Tsoil + theme(axis.text.x = element_blank())
+  Gr_Tsoil = Gr_Tsoil + theme(axis.ticks.x = element_blank())
+  #ggtitle("Tsoil A and B")
+
+  #####Volumetric water content VWC A and B
+
+  Gr_water = Gr_water +coord_cartesian(xlim = c(1, 365, by=30),ylim = c(0, 40))
+  Gr_water = Gr_water +xlab("Day of the year")
+  Gr_water = Gr_water +ylab(expression(bold(paste("SWC at 5cm depth (%)"," ",sep=""))))
+  Gr_water = Gr_water +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_water = Gr_water +theme_few(base_size = 18, base_family = "serif")
+  Gr_water = Gr_water +theme(axis.title.y = element_text(size = 16, face="bold"))
+  Gr_water = Gr_water +theme(plot.margin = unit(c(0,1,0,2), "lines"))
+  Gr_water = Gr_water +theme(axis.title.x = element_text(size =15, face="bold"))
+  #ggtitle("Volumetric water content VWC A and B")
+
+  biomet_graph = grid.arrange(Gr_PAR, Gr_Tsoil, Gr_water, ncol=1)
+
+  return(biomet_graph)
+
+}
+
+PlotFluxSep = function(DataList) {
+
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = as.factor(c(15,21,17,19))
+  Gr_NEE =  ggplot()
+  Gr_Reco =   ggplot()
+  Gr_GPP =  ggplot()
+
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+    Gr_NEE = Gr_NEE + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(NEE_f_sums* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_NEE = Gr_NEE + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=NEE_f_sums* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+
+    Gr_Reco = Gr_Reco + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+
+    Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=GPP* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+
+  }
+  Gr_NEE = Gr_NEE + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_NEE = Gr_NEE +  geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  Gr_NEE = Gr_NEE + xlab("Day of the year")
+  Gr_NEE = Gr_NEE + ylab(expression(paste(bold("NEE")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  #μmol CO2 m-2s-1)")+
+  Gr_NEE = Gr_NEE + geom_vline(xintercept = 207, size=1, alpha=.8)
+  #scale_x_continuous(breaks = round(seq(120, max(Daily_A_114$Doy), by = 50),1))
+  Gr_NEE = Gr_NEE + theme_few(base_size = 15, base_family = "serif")
+  Gr_NEE = Gr_NEE + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_NEE = Gr_NEE + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_NEE = Gr_NEE + theme(axis.title.x = element_blank())
+  Gr_NEE = Gr_NEE + theme(axis.text.x = element_blank())
+  Gr_NEE = Gr_NEE + theme(axis.ticks.x = element_blank())
+  #ggtitle("NEE_f daily sums for all year ")
+
+  ###### Reco
+
+
+  Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_Reco = Gr_Reco + geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  Gr_Reco = Gr_Reco + xlab("Day of the year")
+  Gr_Reco = Gr_Reco + geom_vline(xintercept = 163, size=3, alpha=.2)
+  Gr_Reco = Gr_Reco + ylab(expression(paste(bold("Reco")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  #μmol CO2 m-2s-1)")+
+  Gr_Reco = Gr_Reco + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_Reco = Gr_Reco + theme_few(base_size = 15, base_family = "serif")
+  Gr_Reco = Gr_Reco + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_Reco = Gr_Reco + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Reco = Gr_Reco + theme(axis.title.x = element_blank())
+  Gr_Reco = Gr_Reco + theme(axis.text.x = element_blank())
+  Gr_Reco = Gr_Reco + theme(axis.ticks.x = element_blank())
+  # ggtitle("Reco daily sums for all year ")
+
+  ###### GPP
+
+  Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  Gr_GPP = Gr_GPP +xlab("Day of the year")
+  Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  Gr_GPP = Gr_GPP +geom_vline(xintercept = 163, size=3, alpha=.2)
+  #μmol CO2 m-2s-1)")+
+  Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_GPP = Gr_GPP +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  #ggtitle("GPP daily sums for all year ")
+  return(grid.arrange(Gr_NEE, Gr_Reco, Gr_GPP, ncol=1))
+}
+
+
+PlotFluxSepCum = function(DataList){
+
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = as.factor(c(15,21,17,19))
+
+  Gr_NEE_cum =  ggplot()
+  Gr_Reco_cum =  ggplot()
+  Gr_GPP_cum =ggplot()
+
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+    Gr_GPP_cum = Gr_GPP_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((GPP * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
+    Gr_NEE_cum = Gr_NEE_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((NEE_f_sums * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
+    #xlab("Day of the year ")+
+    Gr_Reco_cum = Gr_Reco_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((Reco * 12*18 /10000))), size=1,linetype =linetypes[n], position=pd)
+  }
+
+  Gr_NEE_cum = Gr_NEE_cum +ylab(expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+  #μmol CO2 m-2s-1)")+
+  Gr_NEE_cum = Gr_NEE_cum +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_NEE_cum = Gr_NEE_cum +geom_hline(yintercept = 0, linetype=2)
+  Gr_NEE_cum = Gr_NEE_cum + theme_few(base_size = 15, base_family = "serif")
+  Gr_NEE_cum = Gr_NEE_cum +theme(axis.title.y = element_text(size =16, face="bold"))
+  Gr_NEE_cum = Gr_NEE_cum +theme(axis.title.x = element_blank())
+  Gr_NEE_cum = Gr_NEE_cum +theme(axis.text.x = element_blank())
+  Gr_NEE_cum = Gr_NEE_cum +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_NEE_cum = Gr_NEE_cum +theme(axis.ticks.x = element_blank())
+  #+ggtitle("NEE_f cumulation for two towers total")
+
+
+
+  Gr_Reco_cum = Gr_Reco_cum + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  #xlab("Day of the year ")+
+  Gr_Reco_cum = Gr_Reco_cum + ylab(expression(paste(bold("Cumulative Reco")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+  #μmol CO2 m-2s-1)")+
+  Gr_Reco_cum = Gr_Reco_cum + geom_hline(yintercept = 0, linetype=2)
+  Gr_Reco_cum = Gr_Reco_cum + theme_few(base_size = 15, base_family = "serif")
+  Gr_Reco_cum = Gr_Reco_cum + theme(axis.title.y = element_text(size = 16, face="bold",hjust=0.2, vjust=1,lineheight = 45))
+  Gr_Reco_cum = Gr_Reco_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Reco_cum = Gr_Reco_cum + theme(axis.title.x = element_blank())
+  Gr_Reco_cum = Gr_Reco_cum + theme(axis.text.x = element_blank())
+  Gr_Reco_cum = Gr_Reco_cum + theme(axis.ticks.x = element_blank())
+  # ggtitle("NEE_f cumulation for two towers total")
+
+  Gr_GPP_cum =Gr_GPP_cum +  scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_GPP_cum =Gr_GPP_cum +  xlab("Day of the year ")
+  Gr_GPP_cum =Gr_GPP_cum +  ylab(expression(paste(bold("Cumulative  GPP")," ( g "," ",C[CO[2]]," ",m^-2," )",sep="")))
+  #μmol CO2 m-2s-1)")+
+  Gr_GPP_cum =Gr_GPP_cum +  geom_hline(yintercept = 0, linetype=2)
+  Gr_GPP_cum =Gr_GPP_cum +theme_few(base_size = 15, base_family = "serif")
+  Gr_GPP_cum =Gr_GPP_cum + theme(axis.title.y = element_text(size =16, face="bold"))
+  Gr_GPP_cum =Gr_GPP_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_GPP_cum =Gr_GPP_cum + theme(axis.title.x = element_text(size =15, face="bold"))
+
+  return(grid.arrange(Gr_NEE_cum, Gr_Reco_cum, Gr_GPP_cum, ncol=1))
+
+}
+
+
+
+
+
+
+
+
 #package.skeleton(list = c("read_eddy_data","read_biomet_data","join_for_gapfilling","max_footprints","filter_by_quality","reddyproc_gapfill","add_separators","add_events","PlotWindRoses","footprint_for_angle","fill_gap_by_date"), name = "EddyPostProcess")
 
 
@@ -829,7 +1058,6 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 
 #write.csv(AllData_A, file="Site_A_all.csv")
 #write.csv(Combined, file="Two_towers.csv")
-
 
 
 
