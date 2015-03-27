@@ -788,15 +788,15 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
 compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
   pd = position_dodge(.1)
   shape_list = c(15,21,17,19)
-  linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  linetypes=c( "solid", "dashed", "dotdash", "longdash", "twodash")
   graph = ggplot()
   for (n in 1:length(tower_list)) {
 
     if (type=="diurnal") {
-      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=.5)
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=1)
       graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)}
     if (type=="cumul") {
-      graph = graph + geom_line(data = tower_list[[n]], aes_string(x = x_variable, y=y_variable), position=pd,linetype=linetypes[n], size=.5  )
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x = x_variable, y=y_variable), position=pd,linetype=linetypes[n], size=1  )
     }
     #graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
     if (errorbar){

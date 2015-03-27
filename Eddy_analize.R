@@ -9,8 +9,8 @@ source(file="Eddy_postproduction.r", local=TRUE)
 
 DataFolderA_13 = 'Data_A/'
 DataFolderB_13 = 'Data_B/'
-DataFolderA_14 = 'Data_A/'
-DataFolderB_14 = 'Data_B/'
+DataFolderA_14 = 'Data_A_14/'
+DataFolderB_14 = 'Data_B_14/'
 Site_A = c(410041, 6188869)
 Site_B = c(410155, 6188893)
 site_polygon  = data.frame(as.numeric(c(409957,410179,410243,410014)),as.numeric(c(6188984,6189058,6188849,6188774)))
@@ -26,14 +26,14 @@ All_towers_height  = 1.5
 
 
 
-AllData_A_13 = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+AllData_A_13 = FullEddyPostProcess (DataFolderA_13,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
-AllData_B_13 = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-#save(AllData_B, file="AllData_B_2013")
+AllData_B_13 = FullEddyPostProcess (DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
+save(AllData_A_13, AllData_B_13,AllData_A_14,AllData_B_14, file="AllData")
 AllData_A_14 = FullEddyPostProcess (DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
 AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-
+  
 
 
 #save(AllData_B, file="AllData_B_2013")
@@ -77,12 +77,14 @@ Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE
 
 #  NEE_f for several towers, diurnal ---------------------------------------
 
-compare_plot(list(AllData_A_14$hourly$NEE_f,AllData_B_14$hourly$NEE_f), "hour", "hour_means","diurnal")
+compare_plot(list(AllData_A_13$hourly$NEE_f,AllData_B_13$hourly$NEE_f,AllData_A_14$hourly$NEE_f,AllData_B_14$hourly$NEE_f), "hour", "hour_means","diurnal")
 
 
 # NEE_f cumulation forseveral towers total --------------------------------
 #source(file="Eddy_postproduction.r", local=TRUE)
-compare_plot(list(AllData_A_14$daily,AllData_B_14$daily), "DoY", "NEE_f_cumsum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+compare_plot(list(AllData_A_13$daily,AllData_B_13$daily,AllData_A_14$daily,AllData_B_14$daily), "DoY", "NEE_f_cumsum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+compare_plot(list(AllData_A_13$daily,AllData_B_13$daily,AllData_A_14$daily,AllData_B_14$daily), "DoY", "Reco_sum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+compare_plot(list(AllData_A_13$daily,AllData_B_13$daily,AllData_A_14$daily,AllData_B_14$daily), "DoY", "GPP_sum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
 
 
 
