@@ -1,4 +1,3 @@
-
 # Loading postproduction --------------------------------------------------
 
 source(file="Eddy_postproduction.r", local=TRUE)
@@ -29,15 +28,11 @@ All_towers_height  = 1.5
 AllData_A_13 = FullEddyPostProcess (DataFolderA_13,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
 AllData_B_13 = FullEddyPostProcess (DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-<<<<<<< HEAD
-save(AllData_A_13, AllData_B_13,AllData_A_14,AllData_B_14, file="AllData")
-=======
 #save(AllData_B, file="AllData_B_2013")
->>>>>>> 48e60a7482015af71453b986fbea9b0659fe170b
 AllData_A_14 = FullEddyPostProcess (DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
 AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-  
+
 
 
 #save(AllData_B, file="AllData_B_2013")
@@ -67,18 +62,11 @@ AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with=FALSE], by
 # Check what is in reddy part
 Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE)
 
-#Biomet урожай - 226 день, а всего 315, обрезать 230 днем PAR - убрать нули и линии, белые кружки и черные, SWC - заполнить пропуски
 
-#GPP Reco Nee - обрезать 230 днем, 
-#Сбросить данные для O и А - получасовые убрать Со2
-#GPP - phase aligned - till 120d (110-230)
-#всходы -11д, кущение - 31д, выход в трубку - 41д, молочгая спелость - 53д, восковая спелость - 64д
-#общая спелость -66д
-#GPPvsTsoil,GPPvsPar, GPPvsSWC, qGPP vs Tsoil, qGPPvsPaR, qGPP vs SWC, то же самое для Reco - facet - попробрвать с логарифмами
-#Поискать выпадающие значения
-#Суммы активных температур?
-#Поиск пиков
-#Идеи
+
+
+
+
 
 
 # All types of graphs -----------------------------------------------------
@@ -93,9 +81,7 @@ compare_plot(list(AllData_A_13$hourly$NEE_f,AllData_B_13$hourly$NEE_f,AllData_A_
 
 # NEE_f cumulation forseveral towers total --------------------------------
 #source(file="Eddy_postproduction.r", local=TRUE)
-compare_plot(list(AllData_A_13$daily,AllData_B_13$daily,AllData_A_14$daily,AllData_B_14$daily), "DoY", "NEE_f_cumsum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
-compare_plot(list(AllData_A_13$daily,AllData_B_13$daily,AllData_A_14$daily,AllData_B_14$daily), "DoY", "Reco_sum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
-compare_plot(list(AllData_A_13$daily,AllData_B_13$daily,AllData_A_14$daily,AllData_B_14$daily), "DoY", "GPP_sum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+compare_plot(list(AllData_A_14$daily,AllData_B_14$daily), "DoY", "NEE_f_cumsum","cumul", ylab=expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
 
 
 
@@ -340,9 +326,9 @@ for (i in 1:length(periods_a))
 #### Dependecies from factors  - useless for NEE, we need to deconstruct it###########
 
 ggplot() +
-
+  
   geom_point(data = Daily_A_114 , aes(x=SWC_1*100, y=NEE_f_sums* 12 * 18/10000),position=pd,size=2, shape=1, fill="white")+
-
+  
   geom_point(data = Daily_A_114 , aes(x=SWC_1*100, y=GPP*12 * 18/10000),position=pd,size=2, shape=2, fill="black")+
   geom_point(data = Daily_A_114 , aes(x=SWC_1*100, y=Reco* 12 * 18/10000),position=pd,size=2, shape=3, fill="grey")+
   geom_hline(yintercept = 0, size=.5, linetype = 2)+
@@ -377,11 +363,11 @@ ancova(NEE_f_sums ~ Tsoil_f + moisture_levels, data = Daily_A_114, layout=c(5,1)
 #### Dependecies from factors  - useless for NEE, we need to deconstruct it###########
 
 ggplot() +
-
+  
   geom_point(data = AllData_A_14$daily  , aes(x=PAR_Den_Avg, y=GPP*12*18/10000),position=pd,size=2, shape=21, fill="white")+
-
+  
   geom_hline(yintercept = 0, size=.5, linetype = 2)+
-
+  
   ylab(expression(paste(bold(" GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))+
   xlab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep=""))) +
   #μmol CO2 m-2s-1)")+
@@ -398,7 +384,7 @@ ggplot() +
 ggplot() +
   geom_line(data =  AllData_A_14$daily , aes(x=Doy, y=ma(PAR_Den_Avg)),position=pd) +
   geom_point(data = AllData_A_14$daily , aes(x=Doy, y=PAR_Den_Avg),position=pd,size=3, shape=21, fill="white")+
-
+  
   xlab("Day of the year") +
   ylab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep=""))) +
   theme_few(base_size = 20, base_family = "serif")+
@@ -441,7 +427,7 @@ ggplot() +
 Gr_Tsoil = ggplot() +
   geom_line(data = AllData_A_14$daily , aes(x=Doy, y=ma(Tsoil_f)),position=pd, size=.8) +
   geom_point(data = AllData_A_14$daily , aes(x=Doy, y=Tsoil_f),position=pd,size=2, shape=21, fill="white",alpha=.5)+
-
+  
   geom_line(data = AllData_B_14$daily , aes(x=Doy, y=ma(Tsoil_f)),position=pd,size=.8,linetype=2) +
   geom_point(data = AllData_B_14$daily , aes(x=Doy, y=Tsoil_f),position=pd,size=2, shape=21, fill="black",alpha=.5)+
   xlab("Day of the year") +
@@ -485,10 +471,3 @@ ggplot() +
   theme(axis.title.y = element_text(size = 15, face="bold")) +
   theme(axis.title.x = element_text(size =15, face="bold"))+
   ggtitle("Precipitation")
-
-
-
-
-----------------------------------
-
-

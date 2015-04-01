@@ -22,7 +22,7 @@ adapt_complex_csv = function(data){
     names(temp_dataset) = (as.character(temp_dataset[1, ]))
     print('Names gotten')
   }
-
+  
   temp_dataset_startline = which(as.character(temp_dataset$daytime) == "T" | as.character(temp_dataset$daytime) == "F")[1];
   temp_dataset = temp_dataset[temp_dataset_startline:length(temp_dataset[['date']]), ]
   print('Removing junk data')
@@ -32,16 +32,16 @@ adapt_complex_csv = function(data){
     temp_dataset[['date']] = paste(substr(temp_dataset[['date']],7,10),substr(temp_dataset[['date']],4,5),substr(temp_dataset[['date']],1,2),sep="-")
     print('New date constructed')
   }
-
-
-
+  
+  
+  
   #print(temp_dataset)
-
+  
   return(temp_dataset)
 }
 
 na_percent = function(x) {
-
+  
   return(length(which(is.na(x)))/length(x))
 }
 df.mass.tonumeric = function(df) {
@@ -59,13 +59,13 @@ read_eddy_data = function(data_path)
   print("Found next eddypro result files:")
   print(file_list)
   for (file in file_list){
-
+    
     # if the merged dataset does exist, append to it
     if (exists("dataset")){
       temp_dataset = fread(file, header = "auto", autostart = 60, skip=1)
       print(paste(paste("File",file, sep = " "), "read", sep=" "))
       temp_dataset = adapt_complex_csv(temp_dataset)
-
+      
       inter = na.exclude(match(names(temp_dataset),names(dataset)))
       #print(head(dataset))
       temp_dataset = temp_dataset[,inter, with = FALSE]
@@ -104,8 +104,8 @@ read_eddy_data = function(data_path)
       finally = {
         print(paste("File read:",file))
       })
-
-
+      
+      
       #temp_dataset_startline = which(as.character(dataset$daytime) == "T" | as.character(dataset$daytime) == "F")[1];
       #dataset = dataset[temp_dataset_startline:length(dataset[['DOY']]), ]
       dataset = adapt_complex_csv(dataset)
@@ -123,15 +123,15 @@ read_biomet_data = function(data_path)
 {
   #setwd(data_path)
   file_list = paste(data_path,list.files(path = data_path, pattern="*.dat"),sep="/")
-
+  
   for (file in file_list){
-
+    
     # if the merged dataset does exist, append to it
     if (exists("dataset")){
       temp_dataset = fread(file, header = "auto", autostart = 60, skip=1)
       temp_dataset_startline = grep(":",temp_dataset$TIMESTAMP)[1];
       temp_dataset = temp_dataset[temp_dataset_startline:length(temp_dataset$RECORD), ]
-
+      
       dataset = rbind.fill(dataset, temp_dataset)
       rm(temp_dataset)
     }
@@ -141,7 +141,7 @@ read_biomet_data = function(data_path)
       #temp_dataset_startline = grep(":",dataset$TIMESTAMP)[1];
       #dataset = dataset[temp_dataset_startline[1]:length(dataset$RECORD), ]
     }
-
+    
   }
   #setwd('../')
   return (data.table(dataset))
@@ -153,15 +153,15 @@ read_biomet_data = function(data_path)
 
 
 join_for_gapfilling = function(data_,biometdata_){
-
+  
   data_[data_ == -9999.0] = NA
   biometdata_[['TIMESTAMP']] = as.POSIXct(as.POSIXlt(biometdata_[['TIMESTAMP']],format="%Y-%m-%d %H:%M:%S", tz="MSK"))
-
+  
   hours = as.numeric(substr(data_[['time']],0,2))
   mins = as.numeric(substr(data_[['time']],4,6))
   mins[ mins > 0 ] = 0.5
   hours = mins+hours
-
+  
   EddyData.F = data.frame(as.integer(substr(data_[['date']],0,4)),
                           as.integer(data_[['DOY']]),
                           hours,data_[['date']],
@@ -180,24 +180,24 @@ join_for_gapfilling = function(data_,biometdata_){
                           as.numeric(data_[['rand_err_h2o_flux']]),
                           as.numeric(data_[['rand_err_co2_flux']]),
                           as.numeric(data_[['qc_co2_flux']]))
-
-
-
+  
+  
+  
   names(EddyData.F) = c('Year','DoY','Hour','date','NEE','H2O_NEE','LE','H','Tair','rH','VPD','Ustar','wind_speed','wind_dir','x_70%','x_90%','QF_h2o','rand_err_h2o_flux','rand_err_co2_flux','QF')
   EddyDataWithPosix.F <- fConvertTimeToPosix(na.exclude(EddyData.F), 'YDH', Year.s='Year', Day.s='DoY', Hour.s='Hour')
-
+  
   print(lapply(EddyDataWithPosix.F,class))
-
+  
   EddyDataWithPosixNew.F = data.table(fill_gap_by_date(EddyDataWithPosix.F,"DateTime",21))
   print("Filled gaps")
   setnames(biometdata_,'TIMESTAMP','DateTime')
   setkey(biometdata_,'DateTime')
   setkey(EddyDataWithPosixNew.F,'DateTime')
-
+  
   joined = merge(biometdata_[,c(1:57), with=FALSE],EddyDataWithPosixNew.F, all=TRUE, by=c('DateTime'),allow.cartesian=TRUE)
-
-
-
+  
+  
+  
   #join = EddyDataWithPosixNew.F[biometdata_[,c(1,5,6,7,8,15,16,17,20,23,33,36,37,38,39,40,44,45,46,47,48,49,50,51,52,53,54,56,57), with=FALSE],roll=FALSE]
   print('Joined')
   #Converting column names to satisfy REddyProc convention
@@ -222,9 +222,9 @@ join_for_gapfilling = function(data_,biometdata_){
   if (any(names(biometdata_) == "SWC_10cm_1_Avg")) {
     setnames(joined,"SWC_10cm_1_Avg","SWC_1")
   }
-
+  
   joined[['Tsoil']]=as.numeric(joined[['Tsoil']])
-
+  
   joined[['Rg']]=as.numeric(joined[['Rg']])
   joined = joined[3:length(joined[,1, with=FALSE][[1]])]
   if ( length(which(duplicated(joined))) > 0 ) {
@@ -232,9 +232,9 @@ join_for_gapfilling = function(data_,biometdata_){
     print( length(which(duplicated(joined))) )
     joined = joined[!which(duplicated(joined))]
   }
-
-
-
+  
+  
+  
   print("Starting big Gap fill")
   joined.tf = fill_gap_by_date(joined,"DateTime",77)
   print('Stoped big gap fill')
@@ -243,13 +243,13 @@ join_for_gapfilling = function(data_,biometdata_){
   td[td == "NaN" | td == "NAN" | td == "NA"] = NA
   joined.tf = cbind(joined.tf[,1,with=FALSE],td)
   joined.tf[which(duplicated(joined.tf))] = NULL
-
+  
   if ( length(which(is.na(joined.tf[['DateTime']]))) > 0 ) {
     joined.tf = joined.tf[!which(is.na(joined.tf[['DateTime']]))]
   }
-
-
-
+  
+  
+  
   return(joined.tf)
 }
 
@@ -291,21 +291,21 @@ footprint_for_angle = function(angle_v, ks_, bs_, xp_, yp_)
   typeof(angle_v)
   kp = tan((90 - angle_v)/180*pi)
   bp = yp_ - kp*xp_
-
+  
   xc = (bs_ - bp)/(kp - ks_)
   yc = (kp*bs_ - bp*ks_)/(kp - ks_)
-
+  
   if (is.na(angle_v)) {return(NA)}
   if (angle_v <= 180) {
     xcs = xc[xc >= xp_]
     ycs = yc[xc >= xp_]
   }
-
+  
   if (angle_v > 180) {
     xcs = xc[xc <= xp_]
     ycs = yc[xc <= xp_]
   }
-
+  
   footprint  = min(((ycs - yp_)^2+(xcs - xp_)^2)^.5)
   return(footprint)
 }
@@ -323,8 +323,8 @@ max_footprints = function(site_point, s_polygon, alldata, wind_var)
   shift_index = c( 2:length(s_polygon[,1]), 1)
   ks  = (s_polygon[,2][shift_index]-s_polygon[,2][index])/(s_polygon[,1][shift_index]-s_polygon[,1][index])
   bs = (s_polygon[,2][shift_index]*s_polygon[,1][index]-s_polygon[,2][index]*s_polygon[,1][shift_index])/(s_polygon[,1][index]-s_polygon[,1][shift_index])
-
-
+  
+  
   A_max_footprints = sapply(angle_vector, function(x) footprint_for_angle(x, ks, bs, xp, yp))
   return(alldata[, max_footprint:= A_max_footprints])
 }
@@ -339,14 +339,14 @@ filter_by_quality = function(join_,tower_height){
   join_[['x_70%']] = as.numeric(join_[['x_70%']])
   join_[['QF']] = as.numeric(join_[['QF']])
   join_[['max_footprint']] = as.numeric(join_[['max_footprint']])
-
+  
   join_.sigma = sd(join_[['NEE']], na.rm = TRUE)
   join_.mean = mean(join_[['NEE']], na.rm = TRUE)
-
+  
   print(join_.sigma)
   print(join_.mean)
-
-
+  
+  
   join_[['NEE']][join_[['NEE']] < join_.mean - 3*join_.sigma] = NA
   join_[['NEE']][join_[['NEE']] > join_.mean + 3*join_.sigma ] = NA
   print("Left after 3sigma filter:")
@@ -367,7 +367,7 @@ filter_by_quality = function(join_,tower_height){
   join_[['H2O_NEE']][join_[['x_70%']] > join_[['max_footprint']]] = NA
   join_[['H2O_NEE']][join_[['x_70%']] > tower_height * 10] = NA
   join_[['H2O_NEE']][join_[['x_70%']] < 2 ] = NA
-
+  
   return(join_)
 }
 
@@ -384,7 +384,7 @@ reddyproc_gapfill = function(join_){
   join_$Tsoil = as.numeric(join_$Tsoil)
   join_$rH = as.numeric(join_$rH)
   join_$VPD = as.numeric(join_$VPD)
-
+  
   EddyProc.C = sEddyProc$new('Join', join_, c('NEE', 'LE', 'H', 'Rg', 'Tair', 'Tsoil', 'rH', 'VPD'))
   EddyProc.C$sMDSGapFill('NEE', FillAll.b=TRUE)
   EddyProc.C$sMDSGapFill('Rg', FillAll.b=FALSE)
@@ -399,7 +399,7 @@ reddyproc_gapfill = function(join_){
   setkey(TempDT,'sDateTime')
   setkey(join_,'DateTime')
   FullData_ = join_[TempDT[,c('sDateTime','NEE_f','Rg_f','LE_f','H_f','Tair_f','rH_f','VPD_f','Tsoil_f'), with=FALSE],roll=FALSE]
-
+  
   return(EddyProc.C)
 }
 reddyproc_extract_main_data = function(join_,EddyProc_){
@@ -425,7 +425,7 @@ add_separators = function(FullData_, lat, lon, zone){
   week = as.integer(strftime(as.POSIXlt(FullData_[,1, with=FALSE][[1]]), format="%U"))
   decimal_hour = as.numeric(strftime(as.POSIXlt(FullData_[,1, with=FALSE][[1]]), format="%H"))+as.numeric(strftime(as.POSIXlt(FullData_[,1, with=FALSE][[1]]), format="%M"))/60
   sunpos = fCalcSunPosition(doy, decimal_hour, lat, lon, zone)
-
+  
   separations = data.table(data.frame( FullData_[['DateTime']],doy, dom, hour, month_name, month_number,week, sunpos[['SolTime']],sunpos[['SolDecl']],sunpos[['SolElev']]))
   names(separations) = c('sDateTime', 'Doy','DOM','hour','month_name','month_number','week','SolTime','SolDecl', 'SolElev')
   setkey(separations,'sDateTime')
@@ -457,7 +457,7 @@ PlotWindRoses = function(EddyData, wind_speed, wind_dir)
 ma  = function(x,n=7){
   #filter(x,rep(1/n,n), sides=2) - untill dplyr breaks filter function - we'll use zoo
   #library("zoo")
-
+  
   return(c(x[1:6],rollmean(x, n,align="right",na.pad = FALSE)))
 }
 
@@ -474,26 +474,26 @@ daily_data = function(Data){
       daily_sum = tapply(as.numeric(Data[[name]]), Data$Doy, sum, na.rm = TRUE)
       daily_mean = tapply(as.numeric(Data[[name]]), Data$Doy, mean, na.rm = TRUE)
       daily_error = tapply(as.numeric(Data[[name]]), Data$Doy, sd)
-
+      
       daily_error = daily_error/sqrt(length(Data[[name]]))*1.96
-
+      
       if (exists('daily_sums')) {
         daily_sums = cbind(daily_sums, daily_sum)
         daily_means = cbind(daily_means, daily_mean)
         daily_errors = cbind(daily_errors, daily_error)
-
+        
       }
       else{
         daily_sums = data.frame(daily_sum)
         daily_means = data.frame(daily_mean)
         daily_errors = data.frame(daily_error)
-
+        
       }
       new_names = c(new_names,name)
     }
   }
   daily_cumsums_g  = cumsum(daily_sums) *12 *18 /10000
-
+  
   names(daily_sums) = paste(new_names,"sums", sep="_")
   names(daily_means) = new_names
   names(daily_errors) = paste(new_names,"errors", sep="_")
@@ -504,7 +504,7 @@ daily_data = function(Data){
   #    y = mean(x[['NEE_f']][x[['PAR_Den_Avg']] < PAR_margin_for_night & x[['NEE_f']] > 0 ], na.rm=TRUE) - x[['NEE_f']][x[['PAR_Den_Avg']] > PAR_margin_for_night ]
   #    return(sum( y[y>0], na.rm=TRUE))}
   #   ))
-
+  
   Reco  = as.vector(by(Data[,c("NEE_f","SolElev"), with=FALSE], Data$Doy, function(x) mean(x[['NEE_f']][x[['SolElev']] < 0 & x[['NEE_f']] > 0], na.rm=TRUE)*48 ))
   GPP  = as.vector(by(Data[,c("NEE_f","SolElev"), with=FALSE], Data$Doy, function(x) {
     y = mean(x[['NEE_f']][x[['SolElev']] < 0 & x[['NEE_f']] > 0 ], na.rm=TRUE) - x[['NEE_f']][x[['SolElev']] > 0 ]
@@ -516,12 +516,12 @@ daily_data = function(Data){
   GPP[GPP == 'NaN'] = 0
   GPP[GPP == 'NA'] = 0
   GPP[GPP == NA] = 0
-
+  
   NA_count = tapply(as.numeric(Data[['NEE']]), Data$Doy, function(x) length(which(is.na(x))))
   NA_marker = NA_count
-
+  
   NA_marker[NA_marker < 16] = 1
-
+  
   NA_marker[NA_marker >= 16] = 0.1
   Reco_sum = cumsum(Reco *12*18/10000)
   GPP_sum = cumsum(GPP *12*18/10000)
@@ -539,14 +539,14 @@ weekly_data = function(Data){
   new_names = c()
   #Data = Data[[1]]
   for (name in names(Data)){
-
+    
     if ((class(Data[[name]])[1] == 'numeric' ) | (class(Data[[name]])[1] == 'integer' ) | (class(Data[[name]])[1] == 'character' )){
-
+      
       weekly_sum = tapply(as.numeric(Data[[name]]), Data$week, sum, na.rm = TRUE)
       weekly_mean = tapply(as.numeric(Data[[name]]), Data$week, mean, na.rm = TRUE)
       weekly_error = tapply(as.numeric(Data[[name]]), Data$week, sd)
       weekly_error = weekly_error/sqrt(length(Data[[name]]))*1.96
-
+      
       if (exists('weekly_sums')) {
         weekly_sums = cbind(weekly_sums, weekly_sum)
         weekly_means = cbind(weekly_means, weekly_mean)
@@ -580,7 +580,7 @@ month_data = function(Data){
       month_mean = tapply(as.numeric(Data[[name]]), Data$month_number, mean, na.rm = TRUE)
       month_error = tapply(as.numeric(Data[[name]]), Data$month_number, sd)
       month_error = month_error/sqrt(length(Data[[name]]))*1.96
-
+      
       if (exists('month_sums')) {
         month_sums = cbind(month_sums, month_sum)
         month_means = cbind(month_means, month_mean)
@@ -591,11 +591,11 @@ month_data = function(Data){
         month_means = data.frame(month_mean)
         month_errors = data.frame(month_error)
       }
-
+      
       mnew_names = c(mnew_names,name)
     }
   }
-
+  
   names(month_sums) = paste(mnew_names,"sums", sep="_")
   names(month_means) = mnew_names
   names(month_errors) = paste(mnew_names,"errors", sep="_")
@@ -607,7 +607,7 @@ month_data = function(Data){
 # hourly_data -------------------------------------------------------------
 
 hourly_data = function(AllData){
-
+  
   #AllData = AllData[[1]]
   variables_names = names(AllData)[5:86]
   #using plyr because it's already used by ggplot
@@ -628,11 +628,11 @@ hourly_data = function(AllData){
       hour_means = c(hour_means, hour_mean)
       hour_errors = c(hour_errors, hour_error)
       hour_months  = c(hour_months, hour_month)
-
+      
     }
     hour = rep(0:23, length(hour_means)/24)
     #print(hour)
-
+    
     hourly[[which(variables_names == variable)]] =  data.frame(cbind(hour_means,hour_errors,hour_months,hour))
   }
   #setNames(hourly, variables_names)
@@ -653,9 +653,9 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
   nmax = max(na.exclude(AllData[['month_number']]))
   nmin = min(na.exclude(AllData[['month_number']]))
   for (m in nmin:nmax) {
-
+    
     Data = AllData[AllData[['month_number']] == m,]
-
+    
     hour_mean = tapply(Data[['NEE_f']], Data$hour, mean)
     hour_error = tapply(Data[['NEE_f']], Data$hour, sd)
     hour_error = hour_error/sqrt(length(hour_error))*1.96
@@ -663,7 +663,7 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
     hour_means = c(hour_means, hour_mean)
     hour_errors = c(hour_errors, hour_error)
     hour_months  = c(hour_months, hour_month)
-
+    
   }
   hour = as.integer(names(hour_mean))
   return(data.frame(cbind(hour_means,hour_errors,hour_months,hour)))
@@ -675,17 +675,17 @@ hourly_NEE_period = function(AllData,start_date,stop_date){
 hourly_data_for_event = function(AllData, event_name){
   hour_means = c()
   hour_errors = c()
-
-
+  
+  
   Data = AllData[AllData[[event_name]],]
-
+  
   hour_mean = tapply(Data[['NEE_f']], Data$hour, mean)
   hour_error = tapply(Data[['NEE_f']], Data$hour, sd)
   hour_error = hour_error/sqrt(length(hour_error))*1.96
-
+  
   hour_means = c(hour_means, hour_mean)
   hour_errors = c(hour_errors, hour_error)
-
+  
   hour = as.integer(names(hour_mean))
   return(data.frame(cbind(hour_means,hour_errors,hour)))
 }
@@ -743,17 +743,17 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   # Reading Data
   data = read_eddy_data(DataFolder)
   biometdata = read_biomet_data(DataFolder)
-
+  
   # Forming data set for gap filling
   joined_data = join_for_gapfilling(data, biometdata)
-
+  
   #Generating column of max footprints
   joined_data = max_footprints(SiteUTM, SitePolygon, joined_data,'wind_dir')
   # Pre Gap filling Filtering
   joined_data[, setdiff(colnames(joined_data),"DateTime")] <- as.data.table(sapply( joined_data[, setdiff(colnames(joined_data),"DateTime"), with=FALSE], as.numeric))
-
+  
   join.filtered = filter_by_quality(joined_data,tower_height)
-
+  
   #+++ Fill gaps in variables with MDS gap filling algorithm
   # Creating DataTable with filled and biomet data
   Reddyproc  = reddyproc_gapfill(join.filtered)
@@ -765,19 +765,19 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   WithEvents = add_events(events_file,FullData_with_Sep,'DateTime')
   # WindRose
   WithEvents$SWC_1 = as.numeric(WithEvents$SWC_1)
-
+  
   WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   hourly_data = hourly_data(WithEvents)
   data_daily = daily_data(WithEvents)
   data_weekly = weekly_data(WithEvents)
   data_monthly = month_data(WithEvents)
-
-
+  
+  
   AllData = list(dt = WithEvents, reddy = Reddyproc, hourly = hourly_data, daily = data_daily, weekly = data_weekly, monthly = data_monthly)
   AllData$dt$moisture_levels = cut(AllData$dt$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   setkey(AllData$dt, 'DateTime')
-
+  
   return(AllData)
 }
 
@@ -788,45 +788,36 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
 
 compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible=~hour_months,xlab="Time of day (Hour)", ylab=expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")),title="NEE_f for two towers, hourly", errorbar=FALSE){
   pd = position_dodge(.1)
-<<<<<<< HEAD
-  shape_list = c(15,21,17,19)
-  linetypes=c( "solid", "dashed", "dotdash", "longdash", "twodash")
-=======
   shape_list = factor(15,21,17,19)
   linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
->>>>>>> 48e60a7482015af71453b986fbea9b0659fe170b
   graph = ggplot()
   for (n in 1:length(tower_list)) {
-
+    
     if (type=="diurnal") {
-<<<<<<< HEAD
-      graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=1)
-=======
       graph = graph + geom_line(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,linetype=linetypes[n], size=.75)
->>>>>>> 48e60a7482015af71453b986fbea9b0659fe170b
       graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)}
     if (type=="cumul") {
-      graph = graph + geom_line(data = tower_list[[n]], aes_string(x = x_variable, y=y_variable), position=pd,linetype=linetypes[n], size=1  )
+      graph = graph + geom_line(data = tower_list[[n]], aes_string(x = x_variable, y=y_variable), position=pd,linetype=linetypes[n], size=.5  )
     }
     #graph = graph + geom_point(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable),position=pd,shape=shape_list[n], size=2)
     if (errorbar){
       graph =graph + geom_errorbar(data = tower_list[[n]], aes_string(x=x_variable, y=y_variable, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
     }
   }
-
+  
   graph =graph +geom_hline(yintercept = 0, linetype=2)
-
+  
   if (type=="diurnal") {
     graph =graph +facet_wrap(grouping_varaible, ncol = 3)
   }
-
+  
   graph =graph +xlab(xlab)
   graph =graph +ylab(ylab)
   graph =graph +theme_few(base_size = 15, base_family = "serif")
   graph =graph +theme(axis.title.y = element_text(size = 15, face="bold"))
   graph =graph +theme(axis.title.x = element_text(size =15, face="bold"))
   graph =graph +ggtitle(title)
-
+  
   return(graph)
 }
 
@@ -857,8 +848,8 @@ PlotDiurnal = function(DataList) {
 
 
 PlotBiomet = function(DataList) {
-
-
+  
+  
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   Gr_PAR = ggplot()
@@ -893,7 +884,7 @@ PlotBiomet = function(DataList) {
   Gr_PAR = Gr_PAR + theme(axis.text.x = element_blank())
   Gr_PAR = Gr_PAR + theme(axis.ticks.x = element_blank())
   #ggtitle("DRAW mean PAR")
-
+  
   Gr_Tsoil = Gr_Tsoil + xlab("Day of the year")
   Gr_Tsoil = Gr_Tsoil + ylab(expression(bold(paste(T["soil"]," at 5cm depth "," (", ring("C"),")",sep=""))))
   #geom_vline(xintercept = 163, size=3, alpha=.2)
@@ -904,9 +895,9 @@ PlotBiomet = function(DataList) {
   Gr_Tsoil = Gr_Tsoil + theme(axis.text.x = element_blank())
   Gr_Tsoil = Gr_Tsoil + theme(axis.ticks.x = element_blank())
   #ggtitle("Tsoil A and B")
-
+  
   #####Volumetric water content VWC A and B
-
+  
   Gr_water = Gr_water +coord_cartesian(xlim = c(1, 365, by=30),ylim = c(0, 40))
   Gr_water = Gr_water +xlab("Day of the year")
   Gr_water = Gr_water +ylab(expression(bold(paste("SWC at 5cm depth (%)"," ",sep=""))))
@@ -916,32 +907,32 @@ PlotBiomet = function(DataList) {
   Gr_water = Gr_water +theme(plot.margin = unit(c(0,1,0,2), "lines"))
   Gr_water = Gr_water +theme(axis.title.x = element_text(size =15, face="bold"))
   #ggtitle("Volumetric water content VWC A and B")
-
+  
   biomet_graph = grid.arrange(Gr_PAR, Gr_Tsoil, Gr_water, ncol=1)
-
+  
   return(biomet_graph)
-
+  
 }
 
 PlotFluxSep = function(DataList) {
-
+  
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   Gr_NEE =  ggplot()
   Gr_Reco =   ggplot()
   Gr_GPP =  ggplot()
-
+  
   for(n in 1:length(DataList)) {
     pd = position_dodge(.1*n)
     Gr_NEE = Gr_NEE + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(NEE_f_sums* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_NEE = Gr_NEE + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=NEE_f_sums* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
-
+    
     Gr_Reco = Gr_Reco + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
-
+    
     Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=GPP* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
-
+    
   }
   Gr_NEE = Gr_NEE + geom_hline(yintercept = 0, size=.5, linetype = 2)
   Gr_NEE = Gr_NEE +  geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
@@ -957,10 +948,10 @@ PlotFluxSep = function(DataList) {
   Gr_NEE = Gr_NEE + theme(axis.text.x = element_blank())
   Gr_NEE = Gr_NEE + theme(axis.ticks.x = element_blank())
   #ggtitle("NEE_f daily sums for all year ")
-
+  
   ###### Reco
-
-
+  
+  
   Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
   Gr_Reco = Gr_Reco + geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_Reco = Gr_Reco + xlab("Day of the year")
@@ -975,9 +966,9 @@ PlotFluxSep = function(DataList) {
   Gr_Reco = Gr_Reco + theme(axis.text.x = element_blank())
   Gr_Reco = Gr_Reco + theme(axis.ticks.x = element_blank())
   # ggtitle("Reco daily sums for all year ")
-
+  
   ###### GPP
-
+  
   Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
   Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_GPP = Gr_GPP +xlab("Day of the year")
@@ -996,14 +987,14 @@ PlotFluxSep = function(DataList) {
 
 
 PlotFluxSepCum = function(DataList){
-
+  
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
-
+  
   Gr_NEE_cum =  ggplot()
   Gr_Reco_cum =  ggplot()
   Gr_GPP_cum =ggplot()
-
+  
   for(n in 1:length(DataList)) {
     pd = position_dodge(.1*n)
     Gr_GPP_cum = Gr_GPP_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((GPP * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
@@ -1011,7 +1002,7 @@ PlotFluxSepCum = function(DataList){
     #xlab("Day of the year ")+
     Gr_Reco_cum = Gr_Reco_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((Reco * 12*18 /10000))), size=1,linetype =linetypes[n], position=pd)
   }
-
+  
   Gr_NEE_cum = Gr_NEE_cum +ylab(expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
   #μmol CO2 m-2s-1)")+
   Gr_NEE_cum = Gr_NEE_cum +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
@@ -1023,9 +1014,9 @@ PlotFluxSepCum = function(DataList){
   Gr_NEE_cum = Gr_NEE_cum +theme(plot.margin = unit(c(0,1,0,1), "lines"))
   Gr_NEE_cum = Gr_NEE_cum +theme(axis.ticks.x = element_blank())
   #+ggtitle("NEE_f cumulation for two towers total")
-
-
-
+  
+  
+  
   Gr_Reco_cum = Gr_Reco_cum + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   #xlab("Day of the year ")+
   Gr_Reco_cum = Gr_Reco_cum + ylab(expression(paste(bold("Cumulative Reco")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
@@ -1038,7 +1029,7 @@ PlotFluxSepCum = function(DataList){
   Gr_Reco_cum = Gr_Reco_cum + theme(axis.text.x = element_blank())
   Gr_Reco_cum = Gr_Reco_cum + theme(axis.ticks.x = element_blank())
   # ggtitle("NEE_f cumulation for two towers total")
-
+  
   Gr_GPP_cum =Gr_GPP_cum +  scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   Gr_GPP_cum =Gr_GPP_cum +  xlab("Day of the year ")
   Gr_GPP_cum =Gr_GPP_cum +  ylab(expression(paste(bold("Cumulative  GPP")," ( g "," ",C[CO[2]]," ",m^-2," )",sep="")))
@@ -1048,9 +1039,9 @@ PlotFluxSepCum = function(DataList){
   Gr_GPP_cum =Gr_GPP_cum + theme(axis.title.y = element_text(size =16, face="bold"))
   Gr_GPP_cum =Gr_GPP_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
   Gr_GPP_cum =Gr_GPP_cum + theme(axis.title.x = element_text(size =15, face="bold"))
-
+  
   return(grid.arrange(Gr_NEE_cum, Gr_Reco_cum, Gr_GPP_cum, ncol=1))
-
+  
 }
 
 
@@ -1067,7 +1058,3 @@ PlotFluxSepCum = function(DataList){
 
 #write.csv(AllData_A, file="Site_A_all.csv")
 #write.csv(Combined, file="Two_towers.csv")
-
-
-
-
