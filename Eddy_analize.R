@@ -43,22 +43,20 @@ AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_
 AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with=FALSE], by = 'DateTime')
 AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with=FALSE], by = 'DateTime')
 
-#new_names = paste(names(AllData_A),"_a", sep="")
-#names(AllData_A) = new_names
-#new_names = paste(names(AllData_B),"_b", sep="")
-#names(AllData_B) = new_names
+#Biomet урожай - 226 день, а всего 315, обрезать 230 днем PAR - убрать нули и линии, белые кружки и черные, SWC - заполнить пропуски
 
-#setnames(AllData_A,"DateTime_a","DateTime")
-#setnames(AllData_B,"DateTime_b","DateTime")
-#setkey(AllData_A,"DateTime")
-#setkey(AllData_B,"DateTime")
+#GPP Reco Nee - обрезать 230 днем, 
+#Сбросить данные для O и А - получасовые убрать Со2
+#GPP - phase aligned - till 120d (110-230)
+#всходы -11д, кущение - 31д, выход в трубку - 41д, молочгая спелость - 53д, восковая спелость - 64д
+#общая спелость -66д
+#GPPvsTsoil,GPPvsPar, GPPvsSWC, qGPP vs Tsoil, qGPPvsPaR, qGPP vs SWC, то же самое для Reco - facet - попробрвать с логарифмами
+#Поискать выпадающие значения
+#Суммы активных температур?
+#Поиск пиков
+#Идеи
 
 
-#moving average for week
-
-########                      Important check
-# apply(AllData_A$dt,2, typeof)
-# Convert all to right classes
 # Check what is in reddy part
 Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE)
 
@@ -98,8 +96,11 @@ PlotFluxSep(list(AllData_A_13, AllData_A_14))
 PlotFluxSepCum(list(AllData_A_13, AllData_A_14))
 
 
-
-
+AllData_A_13$reddy$sPlotDailySums('NEE_f','NEE_fsd')
+AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
+AllData_A_14$reddy$sPlotDailySums('NEE_f')
+AllData_A_14$reddy$sPlotHHFluxesY('GPP_f', Year.i=2014)
+#Location of DE-Tharandt
 
 
 
