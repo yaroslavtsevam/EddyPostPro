@@ -43,34 +43,10 @@ AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_
 AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with=FALSE], by = 'DateTime')
 AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with=FALSE], by = 'DateTime')
 
-#Biomet урожай - 226 день, а всего 315, обрезать 230 днем PAR - убрать нули и линии, белые кружки и черные, SWC - заполнить пропуски
-
-#GPP Reco Nee - обрезать 230 днем, 
-#Сбросить данные для O и А - получасовые убрать Со2
-#GPP - phase aligned - till 120d (110-230)
-#всходы -11д, кущение - 31д, выход в трубку - 41д, молочгая спелость - 53д, восковая спелость - 64д
-#общая спелость -66д
-#GPPvsTsoil,GPPvsPar, GPPvsSWC, qGPP vs Tsoil, qGPPvsPaR, qGPP vs SWC, то же самое для Reco - facet - попробрвать с логарифмами
-#Поискать выпадающие значения
-#Суммы активных температур?
-#Поиск пиков
-#Идеи
-
-
-# Check what is in reddy part
 Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE)
 
 
-
-
-
-
-
-
 # All types of graphs -----------------------------------------------------
-###TODO Remake all types of graphs with compare plot
-###TODO Add function of fast subseting tower by period - make function period
-###TODO Extract Reco and GPP from Reddy and add to dt, compare it with mine
 
 
 #  NEE_f for several towers, diurnal ---------------------------------------
@@ -94,7 +70,26 @@ PlotDiurnal(list(AllData_A_13, AllData_A_14))
 PlotFluxSep(list(AllData_A_13, AllData_A_14))
 
 PlotFluxSepCum(list(AllData_A_13, AllData_A_14))
+#PlotFluxAlignedDaily (datalist,events, start_event)
+#PlotFluxAlignedDate (datalist,events, start_event)
 
+#Biomet урожай - 226 день, а всего 315, обрезать 230 днем PAR - убрать нули и линии, белые кружки и черные, SWC - заполнить пропуски
+
+#GPP Reco Nee - обрезать 230 днем, 
+#Сбросить данные для O и А - получасовые убрать Со2
+#GPP - phase aligned - till 120d (110-230)
+#всходы -11д, кущение - 31д, выход в трубку - 41д, молочгая спелость - 53д, восковая спелость - 64д
+#общая спелость -66д
+#GPPvsTsoil,GPPvsPar, GPPvsSWC, qGPP vs Tsoil, qGPPvsPaR, qGPP vs SWC, то же самое для Reco - facet - попробрвать с логарифмами
+#Поискать выпадающие значения
+#Суммы активных температур?
+#Поиск пиков
+#Идеи
+###TODO Remake all types of graphs with compare plot
+###TODO Add function of fast subseting tower by period - make function period
+###TODO Extract Reco and GPP from Reddy and add to dt, compare it with mine
+
+# Check what is in reddy part
 
 AllData_A_13$reddy$sPlotDailySums('NEE_f','NEE_fsd')
 AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
