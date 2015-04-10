@@ -70,9 +70,24 @@ PlotDiurnal(list(AllData_A_13, AllData_A_14))
 PlotFluxSep(list(AllData_A_13, AllData_A_14))
 
 PlotFluxSepCum(list(AllData_A_13, AllData_A_14))
-#PlotFluxAlignedDaily (datalist,events, start_event)
-#PlotFluxAlignedDate (datalist,events, start_event)
 
+PlotGPPvsTsoil(list(AllData_A_13, AllData_O),by="SWC")
+PlotGPPvsPAR(list(AllData_A_13, AllData_O),by="SWC")
+PlotGPPvsSWC(list(AllData_A_13, AllData_O))
+
+PlotRecovsTsoil(list(AllData_A_13, AllData_O),by="SWC")
+PlotRecovsPAR(list(AllData_A_13, AllData_O),by="SWC")
+PlotRecovsSWC(list(AllData_A_13, AllData_O))
+
+
+source(file="Eddy_postproduction.r", local=TRUE)
+PlotFluxAlignedDaily (datalist,events, start_event)
+PlotFluxAlignedDate (datalist,events, start_event)
+
+#Разобраться с нормальным разбиением потока и посмотреть, что там не так
+#Добавить новые данные в dt
+#Переписать все функции постороения графиков через общмй конструктор, с возможностью выбора между dt и daily
+#Сделать график зависимости GPP от фазы
 #Biomet урожай - 226 день, а всего 315, обрезать 230 днем PAR - убрать нули и линии, белые кружки и черные, SWC - заполнить пропуски
 
 #GPP Reco Nee - обрезать 230 днем, 
@@ -80,11 +95,16 @@ PlotFluxSepCum(list(AllData_A_13, AllData_A_14))
 #GPP - phase aligned - till 120d (110-230)
 #всходы -11д, кущение - 31д, выход в трубку - 41д, молочгая спелость - 53д, восковая спелость - 64д
 #общая спелость -66д
-#GPPvsTsoil,GPPvsPar, GPPvsSWC, qGPP vs Tsoil, qGPPvsPaR, qGPP vs SWC, то же самое для Reco - facet - попробрвать с логарифмами
 #Поискать выпадающие значения
 #Суммы активных температур?
 #Поиск пиков
 #Идеи
+#
+AllData_O$daily$moisture_levels = cut(AllData_O$daily$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
+AllData_O$daily[!is.na(AllData_O$daily$moisture_levels)]
+
+!is.na(AllData_O$daily$moisture_levels)
+#
 ###TODO Remake all types of graphs with compare plot
 ###TODO Add function of fast subseting tower by period - make function period
 ###TODO Extract Reco and GPP from Reddy and add to dt, compare it with mine
@@ -94,8 +114,15 @@ PlotFluxSepCum(list(AllData_A_13, AllData_A_14))
 AllData_A_13$reddy$sPlotDailySums('NEE_f','NEE_fsd')
 AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
 AllData_A_14$reddy$sPlotDailySums('NEE_f')
-AllData_A_14$reddy$sPlotHHFluxesY('GPP_f', Year.i=2014)
+AllData_A_14$reddy$sPlotHHFluxesY('GPP_fqc', Year.i=2014)
 #Location of DE-Tharandt
+
+
+
+
+
+
+# Old stuff ---------------------------------------------------------------
 
 
 

@@ -21,7 +21,7 @@ Site_coord_and_zone_O = c(51.14567, 36.50624, 4)
 All_towers_height=1.5
 
 
-All_towers_height  = 1.5
+
 AllData_O = FullEddyPostProcess (DataFolderO,Site_O,site_polygon_O,events_O,Site_coord_and_zone_O, All_towers_height)
 AllData_A = FullEddyPostProcess (DataFolderA,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 AllData_B = FullEddyPostProcess (DataFolderB,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)

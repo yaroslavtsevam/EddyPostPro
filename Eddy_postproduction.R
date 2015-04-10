@@ -767,9 +767,10 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   WithEvents$SWC_1 = as.numeric(WithEvents$SWC_1)
   
   WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
-  WithEvents$moisture_levels = cut(WithEvents$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
+
   hourly_data = hourly_data(WithEvents)
   data_daily = daily_data(WithEvents)
+  data_daily$moisture_levels = cut(data_daily$SWC_1, c(0,.1,.2,.3,.4), right=FALSE, labels=c("<10%","<20%","<30%","<40"))
   data_weekly = weekly_data(WithEvents)
   data_monthly = month_data(WithEvents)
   
@@ -1046,31 +1047,282 @@ PlotFluxSepCum = function(DataList){
 
 
 
-PeakCycle <- function(Data=as.vector(sunspots), SearchFrac=0.02){
-  # using package "wmtsa"
-  #the SearchFrac parameter just controls how much to look to either side 
-  #of wavCWTPeaks()'s estimated maxima for a bigger value
-  #see dRange
-  Wave <- wavCWT(Data)
-  WaveTree <- wavCWTTree(Wave)
-  WavePeaks <- wavCWTPeaks(WaveTree, snr.min=5)
-  WavePeaks_Times <- attr(WavePeaks, which="peaks")[,"iendtime"]
+# PlotGPPvsTsoil ----------------------------------------------------------
+
+PlotGPPvsTsoil = function(DataList, by = FALSE) {
   
-  NewPeakTimes <- c()
-  dRange <- round(SearchFrac*length(Data))
-  for(i in 1:length(WavePeaks_Times)){
-    NewRange <- max(c(WavePeaks_Times[i]-dRange, 1)):min(c(WavePeaks_Times[i]+dRange, length(Data)))
-    NewPeakTimes[i] <- which.max(Data[NewRange])+NewRange[1]-1
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = c(1,17,18,19)
+  color_list = c("black","red","white")
+
+  Gr_GPP =  ggplot()
+  
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+    if (by == "SWC")
+    {
+      DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
+    } 
+    #Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=Tsoil, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    
   }
+  if (by == "months")
+  {
+    Gr_GPP = Gr_GPP +  facet_wrap(~month_number, ncol =3)
+  }
+  if (by == "SWC")
+  { 
+    Gr_GPP = Gr_GPP +  facet_wrap(~moisture_levels, ncol =3)
+  } 
+  Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_GPP = Gr_GPP + xlab(expression(bold(paste(T["soil"]," at 5cm depth "," (", ring("C"),")",sep="")))) 
+  Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",m^-2," ",d^-1, " )",sep="")))
   
-  return(matrix(c(NewPeakTimes, Data[NewPeakTimes]), ncol=2, dimnames=list(NULL, c("PeakIndices", "Peaks"))))
+  #μmol CO2 m-2s-1)")+
+  Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(0, max(DataList[[n]]$daily$Tsoil, na.rm =TRUE), by = 5),1))
+  Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_GPP = Gr_GPP +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  #ggtitle("NEE_f daily sums for all year ")
+  return(Gr_GPP)
 }
 
-dev.new(width=6, height=4)
-par(mar=c(4,4,0.5,0.5))
-plot(seq_along(as.vector(sunspots)), as.vector(sunspots), type="l")
-Sunspot_Ext <- PeakCycle()
-points(Sunspot_Ext, col="blue", pch=20)
+# PlotGPPvsPAR ------------------------------------------------------------
+
+
+PlotGPPvsPAR = function(DataList, by = FALSE) {
+  
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = c(1,17,18,19)
+  color_list = c("black","red","white")
+  
+  Gr_GPP =  ggplot()
+  
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+    if (by == "SWC")
+    {
+      DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
+    } 
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=PAR_Den_Avg, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    
+  }
+  if (by == "months")
+  {
+    Gr_GPP = Gr_GPP +  facet_wrap(~month_number, ncol =3)
+  }
+  if (by == "SWC")
+  { 
+    Gr_GPP = Gr_GPP +  facet_wrap(~moisture_levels, ncol =3)
+  }
+  
+  
+  Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_GPP = Gr_GPP + xlab(expression(paste(bold("PAR average density per day "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep="")))
+  Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",m^-2," ",d^-1, " )",sep="")))
+  
+  #μmol CO2 m-2s-1)")+
+  Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(0, max(DataList[[n]]$daily$PAR_Den_Avg, na.rm =TRUE), by = 100),1))
+  Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_GPP = Gr_GPP +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  #ggtitle("NEE_f daily sums for all year ")
+  return(Gr_GPP)
+}
+
+# PlotGPPvsSWC ------------------------------------------------------------
+
+
+PlotGPPvsSWC = function(DataList, by=FALSE) {
+  
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = c(1,17,18,19)
+  color_list = c("black","red","white")
+   
+  Gr_GPP =  ggplot()
+  
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+ 
+    #Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=SWC_1*100, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    
+  }
+  if (by == "months")
+  {
+    Gr_GPP = Gr_GPP + facet_wrap(~month_number, ncol =3)
+  }
+
+  #Gr_GPP = Gr_GPP + 
+  Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_GPP = Gr_GPP +  xlab(expression(bold(paste("SWC at 5cm depth (%)"," ",sep="")))) 
+  Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",m^-2," ",d^-1, " )",sep="")))
+  
+  #μmol CO2 m-2s-1)")+
+  Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(0, max(DataList[[n]]$daily$PAR_Den_Avg, na.rm =TRUE), by = 10),1))
+  Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_GPP = Gr_GPP +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  #ggtitle("NEE_f daily sums for all year ")
+  return(Gr_GPP)
+}
+
+
+# PlotRecovsTsoil ---------------------------------------------------------
+
+
+PlotRecovsTsoil = function(DataList, by = FALSE) {
+  
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = c(1,17,18,19)
+  color_list = c("black","red","white")
+  
+  Gr_Reco =  ggplot()
+  
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+    if (by == "SWC")
+    {
+      DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
+    }  
+    #Gr_Reco = Gr_Reco +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=Tsoil, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    
+  }
+  
+  if (by == "months")
+  {
+    Gr_Reco = Gr_Reco + facet_wrap(~month_number, ncol =3)
+  }
+  if (by == "SWC")
+  { 
+    Gr_Reco = Gr_Reco + facet_wrap(~moisture_levels, ncol =3)
+  }
+  
+  #Gr_Reco = Gr_Reco + 
+  Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_Reco = Gr_Reco + xlab(expression(bold(paste(T["soil"]," at 5cm depth "," (", ring("C"),")",sep="")))) 
+  Gr_Reco = Gr_Reco +ylab(expression(paste(bold("Reco")," ( ","g "," ",m^-2," ",d^-1, " )",sep="")))
+  
+  #μmol CO2 m-2s-1)")+
+  Gr_Reco = Gr_Reco +scale_x_continuous(breaks = round(seq(0, max(DataList[[n]]$daily$Tsoil, na.rm =TRUE), by = 5),1))
+  Gr_Reco = Gr_Reco +theme_few(base_size = 15, base_family = "serif")
+  Gr_Reco = Gr_Reco +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Reco = Gr_Reco +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_Reco = Gr_Reco +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_Reco = Gr_Reco +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  #ggtitle("NEE_f daily sums for all year ")
+  return(Gr_Reco)
+}
+
+# PlotRecovsPAR  ----------------------------------------------------------
+
+
+PlotRecovsPAR = function(DataList, by=FALSE) {
+  
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = c(1,17,18,19)
+  color_list = c("black","red","white")
+  
+  Gr_Reco =  ggplot()
+  
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+      if (by == "SWC")
+    {
+      DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
+    }  
+    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=PAR_Den_Avg, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)    
+  }
+  
+  if (by == "months")
+  {
+    Gr_Reco = Gr_Reco + facet_wrap(~month_number, ncol =3)
+  }
+  if (by == "SWC")
+  { 
+    Gr_Reco = Gr_Reco + facet_wrap(~moisture_levels, ncol =3)
+  }
+   
+  Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_Reco = Gr_Reco + xlab(expression(paste(bold("PAR average density per day "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep="")))
+  Gr_Reco = Gr_Reco +ylab(expression(paste(bold("Reco")," ( ","g "," ",m^-2," ",d^-1, " )",sep="")))
+  Gr_Reco = Gr_Reco +scale_x_continuous(breaks = round(seq(0, max(DataList[[n]]$daily$PAR_Den_Avg, na.rm =TRUE), by = 100),1))
+  Gr_Reco = Gr_Reco +theme_few(base_size = 15, base_family = "serif")
+  Gr_Reco = Gr_Reco +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Reco = Gr_Reco +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_Reco = Gr_Reco +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_Reco = Gr_Reco +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  return(Gr_Reco)
+}
+
+# PlotRecovsSWC -----------------------------------------------------------
+
+
+PlotRecovsSWC = function(DataList) {
+  
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = c(1,17,18,19)
+  color_list = c("black","red","white")
+  
+  Gr_Reco =  ggplot()
+  
+  for(n in 1:length(DataList)) {
+    pd = position_dodge(.1*n)
+    
+    #Gr_Reco = Gr_Reco +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=SWC_1*100, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    
+  }
+  #Gr_Reco = Gr_Reco + 
+  Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  Gr_Reco = Gr_Reco +  xlab(expression(bold(paste("SWC at 5cm depth (%)"," ",sep="")))) 
+  Gr_Reco = Gr_Reco +ylab(expression(paste(bold("Reco")," ( ","g "," ",m^-2," ",d^-1, " )",sep="")))
+  
+  #μmol CO2 m-2s-1)")+
+  Gr_Reco = Gr_Reco +scale_x_continuous(breaks = round(seq(0, max(DataList[[n]]$daily$PAR_Den_Avg, na.rm =TRUE), by = 10),1))
+  Gr_Reco = Gr_Reco +theme_few(base_size = 15, base_family = "serif")
+  Gr_Reco = Gr_Reco +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Reco = Gr_Reco +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_Reco = Gr_Reco +theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_Reco = Gr_Reco +theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  #ggtitle("NEE_f daily sums for all year ")
+  return(Gr_Reco)
+}
+
+
+# PeakCycle <- function(Data=as.vector(sunspots), SearchFrac=0.02){
+#   # using package "wmtsa"
+#   #the SearchFrac parameter just controls how much to look to either side 
+#   #of wavCWTPeaks()'s estimated maxima for a bigger value
+#   #see dRange
+#   Wave <- wavCWT(Data)
+#   WaveTree <- wavCWTTree(Wave)
+#   WavePeaks <- wavCWTPeaks(WaveTree, snr.min=5)
+#   WavePeaks_Times <- attr(WavePeaks, which="peaks")[,"iendtime"]
+#   
+#   NewPeakTimes <- c()
+#   dRange <- round(SearchFrac*length(Data))
+#   for(i in 1:length(WavePeaks_Times)){
+#     NewRange <- max(c(WavePeaks_Times[i]-dRange, 1)):min(c(WavePeaks_Times[i]+dRange, length(Data)))
+#     NewPeakTimes[i] <- which.max(Data[NewRange])+NewRange[1]-1
+#   }
+#   
+#   return(matrix(c(NewPeakTimes, Data[NewPeakTimes]), ncol=2, dimnames=list(NULL, c("PeakIndices", "Peaks"))))
+# }
+# 
+# dev.new(width=6, height=4)
+# par(mar=c(4,4,0.5,0.5))
+# plot(seq_along(as.vector(sunspots)), as.vector(sunspots), type="l")
+# Sunspot_Ext <- PeakCycle()
+# points(Sunspot_Ext, col="blue", pch=20)
 
 
 
