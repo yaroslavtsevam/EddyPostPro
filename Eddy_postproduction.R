@@ -782,6 +782,19 @@ FullEddyPostProcess = function(DataFolder,SiteUTM,SitePolygon,events_file,SiteCo
   return(AllData)
 }
 
+# Add chamber daily data --------------------------------------------------
+
+AddDailyChambers = function(filename,AllData){
+  A_chamb = fread(filename, header = "auto")
+  A_chamb$DateTime = as.POSIXct(as.POSIXlt(A_chamb$Date,format="%d.%m.%Y", tz="MSK"))
+  A_chamb$Doy = as.integer(strftime(as.POSIXlt(A_chamb$DateTime), format="%j"))
+  A_chamb = as.data.table(A_chamb)
+  data_column = which(!(names(A_chamb)=="Date" | names(A_chamb)=="DateTime" ))
+  new_names= names(A_chamb)[data_column]
+  joined = merge(A_chamb[,data_column, with=FALSE],AllData$daily, all=TRUE, by=c('Doy'),allow.cartesian=TRUE)
+  joined[, (new_names) := lapply(.SD, function(x) as.numeric(gsub(",",".", x)) ), .SDcols=new_names]
+  return(joined)
+}
 
 
 # compare_plot ------------------------------------------------------------
@@ -850,7 +863,7 @@ PlotDiurnal = function(DataList) {
 
 PlotBiomet = function(DataList) {
   
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   Gr_PAR = ggplot()
@@ -916,7 +929,7 @@ PlotBiomet = function(DataList) {
 }
 
 PlotFluxSep = function(DataList) {
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   Gr_NEE =  ggplot()
@@ -928,6 +941,13 @@ PlotFluxSep = function(DataList) {
     Gr_NEE = Gr_NEE + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(NEE_f_sums* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_NEE = Gr_NEE + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=NEE_f_sums* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
     
+   if(any(names(DataList[[n]]$daily)=="Rs_t")){
+     Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Rs_t),position=pd,size=2, shape=6,alpha=1, color="red",fill="red")
+   }
+   if(any(names(DataList[[n]]$daily)=="Rs_n")){
+     Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Rs_n),position=pd,size=2, shape=7,alpha=1, color="blue",fill="blue")
+   }
+
     Gr_Reco = Gr_Reco + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
     
@@ -936,11 +956,11 @@ PlotFluxSep = function(DataList) {
     
   }
   Gr_NEE = Gr_NEE + geom_hline(yintercept = 0, size=.5, linetype = 2)
-  Gr_NEE = Gr_NEE +  geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  #Gr_NEE = Gr_NEE +  geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_NEE = Gr_NEE + xlab("Day of the year")
   Gr_NEE = Gr_NEE + ylab(expression(paste(bold("NEE")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
   #μmol CO2 m-2s-1)")+
-  Gr_NEE = Gr_NEE + geom_vline(xintercept = 207, size=1, alpha=.8)
+  #Gr_NEE = Gr_NEE + geom_vline(xintercept = 207, size=1, alpha=.8)
   #scale_x_continuous(breaks = round(seq(120, max(Daily_A_114$Doy), by = 50),1))
   Gr_NEE = Gr_NEE + theme_few(base_size = 15, base_family = "serif")
   Gr_NEE = Gr_NEE + theme(axis.title.y = element_text(size = 15, face="bold"))
@@ -954,9 +974,9 @@ PlotFluxSep = function(DataList) {
   
   
   Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
-  Gr_Reco = Gr_Reco + geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  #Gr_Reco = Gr_Reco + geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_Reco = Gr_Reco + xlab("Day of the year")
-  Gr_Reco = Gr_Reco + geom_vline(xintercept = 163, size=3, alpha=.2)
+  #Gr_Reco = Gr_Reco + geom_vline(xintercept = 163, size=3, alpha=.2)
   Gr_Reco = Gr_Reco + ylab(expression(paste(bold("Reco")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
   #μmol CO2 m-2s-1)")+
   Gr_Reco = Gr_Reco + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
@@ -971,10 +991,10 @@ PlotFluxSep = function(DataList) {
   ###### GPP
   
   Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
-  Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  #Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_GPP = Gr_GPP +xlab("Day of the year")
   Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
-  Gr_GPP = Gr_GPP +geom_vline(xintercept = 163, size=3, alpha=.2)
+  #Gr_GPP = Gr_GPP +geom_vline(xintercept = 163, size=3, alpha=.2)
   #μmol CO2 m-2s-1)")+
   Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
@@ -988,7 +1008,7 @@ PlotFluxSep = function(DataList) {
 
 
 PlotFluxSepCum = function(DataList){
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   
@@ -998,7 +1018,7 @@ PlotFluxSepCum = function(DataList){
   
   for(n in 1:length(DataList)) {
     pd = position_dodge(.1*n)
-    Gr_GPP_cum = Gr_GPP_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((GPP * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
+    Gr_GPP_cum = Gr_GPP_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum(((Reco - NEE_f_sums) * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
     Gr_NEE_cum = Gr_NEE_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((NEE_f_sums * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
     #xlab("Day of the year ")+
     Gr_Reco_cum = Gr_Reco_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((Reco * 12*18 /10000))), size=1,linetype =linetypes[n], position=pd)
@@ -1050,7 +1070,7 @@ PlotFluxSepCum = function(DataList){
 # PlotGPPvsTsoil ----------------------------------------------------------
 
 PlotGPPvsTsoil = function(DataList, by = FALSE) {
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = c(1,17,18,19)
   color_list = c("black","red","white")
@@ -1094,7 +1114,7 @@ PlotGPPvsTsoil = function(DataList, by = FALSE) {
 
 
 PlotGPPvsPAR = function(DataList, by = FALSE) {
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = c(1,17,18,19)
   color_list = c("black","red","white")
@@ -1139,7 +1159,7 @@ PlotGPPvsPAR = function(DataList, by = FALSE) {
 
 
 PlotGPPvsSWC = function(DataList, by=FALSE) {
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = c(1,17,18,19)
   color_list = c("black","red","white")
@@ -1179,7 +1199,7 @@ PlotGPPvsSWC = function(DataList, by=FALSE) {
 
 
 PlotRecovsTsoil = function(DataList, by = FALSE) {
-  
+  pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = c(1,17,18,19)
   color_list = c("black","red","white")

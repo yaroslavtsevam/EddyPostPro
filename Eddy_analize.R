@@ -33,8 +33,6 @@ AllData_A_14 = FullEddyPostProcess (DataFolderA_14,Site_A,site_polygon_A,events_
 
 AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 
-
-
 #save(AllData_B, file="AllData_B_2013")
 
 
@@ -61,21 +59,26 @@ compare_plot(list(AllData_A_14$daily,AllData_B_14$daily), "DoY", "NEE_f_cumsum",
 
 
 # Common old Blocks -------------------------------------------------------
-
-
-PlotBiomet(list(AllData_A_13, AllData_B_14))
-
-PlotDiurnal(list(AllData_A_13, AllData_A_14))
-
-PlotFluxSep(list(AllData_A_13, AllData_A_14))
-
-PlotFluxSepCum(list(AllData_A_13, AllData_A_14))
-
+##
+##
+AllData_A_14$daily = AddDailyChambers("A_2014.csv",AllData_A_14)
+AllData_B_14$daily$Rs_t = AddDailyChambers("A_2014.csv",AllData_B_14)
+PlotBiomet(list(AllData_A_14, AllData_B_14))
+AllData_A_14$daily$GPP_n = AllData_A_14$daily$Reco - AllData_A_14$daily$NEE
+AllData_B_14$daily$GPP_n = AllData_B_14$daily$Reco - AllData_B_14$daily$NEE
+AllData_A_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
+AllData_B_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
+PlotDiurnal(list(AllData_A_14, AllData_B_14))
+PlotDiurnal(list(AllData_A_13, AllData_B_13))
+SepFlux = PlotFluxSep(list(AllData_A_14, AllData_B_14))
+SepFlux[[2]] + geom_point(data = chamb , aes(x=DOY, y=A_t),position=.1,size=4,colour="red", shape=15, fill=1,alpha=.5)
+PlotFluxSepCum(list(AllData_A_14, AllData_B_14))
+PlotFluxSepCum(list(AllData_A_13, AllData_B_13))
 PlotGPPvsTsoil(list(AllData_A_13, AllData_O),by="SWC")
 PlotGPPvsPAR(list(AllData_A_13, AllData_O),by="SWC")
 PlotGPPvsSWC(list(AllData_A_13, AllData_O))
 
-PlotRecovsTsoil(list(AllData_A_13, AllData_O),by="SWC")
+PlotRecovsTsoil(list(AllData_A_14, AllData_B_14))
 PlotRecovsPAR(list(AllData_A_13, AllData_O),by="SWC")
 PlotRecovsSWC(list(AllData_A_13, AllData_O))
 
@@ -113,7 +116,7 @@ AllData_O$daily[!is.na(AllData_O$daily$moisture_levels)]
 
 AllData_A_13$reddy$sPlotDailySums('NEE_f','NEE_fsd')
 AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
-AllData_A_14$reddy$sPlotDailySums('NEE_f')
+AllData_A_14$reddy$sPlotDailySums('GPP_fqc')
 AllData_A_14$reddy$sPlotHHFluxesY('GPP_fqc', Year.i=2014)
 #Location of DE-Tharandt
 
