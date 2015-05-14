@@ -116,8 +116,14 @@ AllData_O$daily[!is.na(AllData_O$daily$moisture_levels)]
 
 AllData_A_13$reddy$sPlotDailySums('NEE_f','NEE_fsd')
 AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
+AllData_A_13$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
+AllData_B_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
+AllData_B_13$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
 AllData_A_14$reddy$sPlotDailySums('GPP_fqc')
-AllData_A_14$reddy$sPlotHHFluxesY('GPP_fqc', Year.i=2014)
+AllData_A_13$reddy$sPlotHHFluxesY('GPP_fqc', Year.i=2013)
+
+str(AllData_A_13$reddy$sTEMP)
+AllData_A_13$reddy$sTEMP$Tair_f
 #Location of DE-Tharandt
 
 
