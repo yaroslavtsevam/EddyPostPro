@@ -1,6 +1,6 @@
 # Loading postproduction --------------------------------------------------
 
-source(file="Eddy_postproduction.r", local=TRUE)
+source(file = "Eddy_postproduction.r", local=TRUE)
 
 
 # Loading towers metadata -------------------------------------------------
@@ -10,36 +10,39 @@ DataFolderA_13 = 'Data_A/'
 DataFolderB_13 = 'Data_B/'
 DataFolderA_14 = 'Data_A_14/'
 DataFolderB_14 = 'Data_B_14/'
+DataFolderO = 'Data_O'
 Site_A = c(410041, 6188869)
 Site_B = c(410155, 6188893)
+Site_O = c(325574, 5668981)
 site_polygon  = data.frame(as.numeric(c(409957,410179,410243,410014)),as.numeric(c(6188984,6189058,6188849,6188774)))
 site_polygon_A  = data.frame(as.numeric(c(410109.5,410012.7,409977.3,410086)),as.numeric(c(6188807,6188739,6188905,6188942)))
 site_polygon_B  = data.frame(as.numeric(c(410188,410225,410128,410086)),as.numeric(c(6188974,6188840,6188811,6188942)))
 forest_polygon  = data.frame(as.numeric(c(409472,409943,409532,408959,408587,408471,408353,408124,408048,408083,408088,408041,408038,408237,408524,408547,409090 ,409323,409550 ,409328,409535,409454)),as.numeric(c(6186623,6186720,6187669,6187536,6187517,6187632,6187882,6188235,6188193,6187844,6187575,6187405,6187222 ,6186987,6186310,6186133,6185574,6185407,6185467,6186180,6186267,6186542)))
-
-
+site_polygon_O = data.frame(as.numeric(c(325578,325965,325381,324931)), as.numeric(c(5669372,5669262,5667644,5667793 )))
+events_O = 'Data_O/events.csv'
 events_A = 'Data_A/events.csv'
 events_B = 'Data_B/events.csv'
 Site_coord_and_zone = c(55.837631, 37.564302, 4)
+Site_coord_and_zone_O = c(51.14567, 36.50624, 4)
 All_towers_height  = 1.5
 
 
 
-AllData_A_13 = FullEddyPostProcess (DataFolderA_13,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+AllData_A_13 = FullEddyPostProcess(DataFolderA_13,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
-AllData_B_13 = FullEddyPostProcess (DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
+AllData_B_13 = FullEddyPostProcess(DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 #save(AllData_B, file="AllData_B_2013")
-AllData_A_14 = FullEddyPostProcess (DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+AllData_A_14 = FullEddyPostProcess(DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
-AllData_B_14 = FullEddyPostProcess (DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-
+AllData_B_14 = FullEddyPostProcess(DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
+AllData_O = FullEddyPostProcess(DataFolderO,Site_O,site_polygon_O,events_O,Site_coord_and_zone_O, All_towers_height)
 #save(AllData_B, file="AllData_B_2013")
 
 
 
 #Adding PAR to site B as soon they very close
-AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with=FALSE], by = 'DateTime')
-AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with=FALSE], by = 'DateTime')
+AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with = FALSE], by = 'DateTime')
+AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with = FALSE], by = 'DateTime')
 
 Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE)
 
@@ -71,21 +74,21 @@ AllData_B_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
 PlotDiurnal(list(AllData_A_14, AllData_B_14))
 PlotDiurnal(list(AllData_A_13, AllData_B_13))
 SepFlux = PlotFluxSep(list(AllData_A_14, AllData_B_14))
-SepFlux[[2]] + geom_point(data = chamb , aes(x=DOY, y=A_t),position=.1,size=4,colour="red", shape=15, fill=1,alpha=.5)
+SepFlux[[2]] + geom_point(data = chamb , aes(x = DOY, y = A_t),position = .1,size = 4,colour = "red", shape = 15, fill = 1, alpha = .5)
 PlotFluxSepCum(list(AllData_A_14, AllData_B_14))
 PlotFluxSepCum(list(AllData_A_13, AllData_B_13))
-PlotGPPvsTsoil(list(AllData_A_13, AllData_O),by="SWC")
-PlotGPPvsPAR(list(AllData_A_13, AllData_O),by="SWC")
+PlotGPPvsTsoil(list(AllData_A_13, AllData_O),by = "SWC")
+PlotGPPvsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotGPPvsSWC(list(AllData_A_13, AllData_O))
 
 PlotRecovsTsoil(list(AllData_A_14, AllData_B_14))
-PlotRecovsPAR(list(AllData_A_13, AllData_O),by="SWC")
+PlotRecovsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotRecovsSWC(list(AllData_A_13, AllData_O))
 
 
-source(file="Eddy_postproduction.r", local=TRUE)
-PlotFluxAlignedDaily (datalist,events, start_event)
-PlotFluxAlignedDate (datalist,events, start_event)
+source(file = "Eddy_postproduction.r", local = TRUE)
+PlotFluxAlignedDaily(datalist,events, start_event)
+PlotFluxAlignedDate(datalist,events, start_event)
 
 #Разобраться с нормальным разбиением потока и посмотреть, что там не так
 #Добавить новые данные в dt
@@ -381,7 +384,7 @@ ggplot() +
   geom_smooth(data = AllData_A_14$daily, aes(x=Tsoil_f, y=Reco* 12 * 18/10000), method = "lm", formula = y ~ x + I(x^3), size = 1 )+
   geom_point(data = AllData_A_14$daily , aes(x=Tsoil_f, y=GPP* 12 * 18/10000),position=pd,size=2, shape=2, fill="green")+
   geom_point(data = AllData_A_14$daily , aes(x=Tsoil_f, y=Reco* 12 * 18/10000),position=pd,size=2, shape=3, fill="blue")+
-  facet_wrap(~moisture_levels, drop=TRUE,)+
+  facet_wrap(~moisture_levels, drop=TRUE)+
   geom_hline(yintercept = 0, size=.5, linetype = 2)+
   coord_cartesian(xlim = c(0, 25))+
   xlab("Temperature (C)")+
