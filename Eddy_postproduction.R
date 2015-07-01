@@ -7,7 +7,7 @@ library('openair')
 library('ggthemes')
 library('pastecs')
 library("gridExtra")
-library("zoo") # hope temporary
+library("RcppRoll") # for fast C++ Rolling mean
 # Reading Data Function
 
 
@@ -62,7 +62,7 @@ read_eddy_data = function(data_path)
     
     # if the merged dataset does exist, append to it
     if (exists("dataset")){
-      temp_dataset = fread(file, header = "auto", autostart = 60, skip=1)
+      temp_dataset = fread(file, header = "auto",sep="auto", autostart = 60, skip=1)
       print(paste(paste("File",file, sep = " "), "read", sep=" "))
       temp_dataset = adapt_complex_csv(temp_dataset)
       
@@ -439,26 +439,29 @@ add_separators = function(FullData_, lat, lon, zone){
 
 
 
-PlotWindRoses = function(EddyData, wind_speed, wind_dir)
-{ windRose(EddyData, ws=wind_speed, wd=wind_dir)
+PlotWindRoses = function(EddyData)
+{ 
+  Data = data.frame(EddyData$DateTime,as.numeric(EddyData$wind_speed),as.numeric(EddyData$wind_dir),as.numeric(EddyData$`x_70%`))
+  names(Data) = c("date","ws","wd","footprint")
+  windRose(Data)
   # one windRose for each year
-  windRose(EddyData, ws=wind_speed, wd=wind_dir,type = "season")
-  windRose(EddyData, ws=wind_speed, wd=wind_dir,type = "year")
+  windRose(Data, type = "season")
+  windRose(Data, type = "year")
   # windRose in 10 degree intervals with gridlines and width adjusted
   ## Not run:
-  windRose(EddyData, ws=wind_speed, wd=wind_dir, angle = 10, width = 0.2, grid.line = 1)
+  windRose(Data, angle = 10, width = 0.2, grid.line = 1)
   ## End(Not run)
   # pollutionRose of nox
-  pollutionRose(EddyData, ws=wind_speed, wd=wind_dir, pollutant = "x_70%")
+  pollutionRose(Data, pollutant = "footprint")
   ## source apportionment plot - contribution to mean
   ## Not run:
-  pollutionRose(EddyData, ws=wind_speed, wd=wind_dir, pollutant = "x_70%", type = "season", statistic = "prop.mean")
+  pollutionRose(Data, pollutant = "footprint", type = "season")
 }
 ma  = function(x,n=7){
   #filter(x,rep(1/n,n), sides=2) - untill dplyr breaks filter function - we'll use zoo
-  #library("zoo")
-  
-  return(c(x[1:6],rollmean(x, n,align="right",na.pad = FALSE)))
+
+  #RcppRoll library
+  return(c(x[1:(n-1)],roll_mean(x,n)))
 }
 
 
@@ -861,7 +864,7 @@ PlotDiurnal = function(DataList) {
 
 
 
-PlotBiomet = function(DataList) {
+PlotBiomet = function(DataList, filled=FALSE, startDoy, endDoy) {
   
   pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
@@ -869,42 +872,56 @@ PlotBiomet = function(DataList) {
   Gr_PAR = ggplot()
   Gr_Tsoil = ggplot()
   Gr_water = ggplot()
+  maxDoy = 1
+  minDoy = 365
   for(n in 1:length(DataList)) {
-    if (!is.null( DataList[[n]]$daily$PAR_Den_Avg)) {
+    if (filled == TRUE ){
+      plot_data = DataList[[n]]$daily_f
+    } else {
+      plot_data = DataList[[n]]$daily
+    }
+    maxDoy = c(maxDoy, max(plot_data$Doy))
+    minDoy = c(minDoy, min(plot_data$Doy))
+    
+    if (!is.null( plot_data$PAR_Den_Avg)) {
       pd = position_dodge(.1*n)
-      Gr_PAR = Gr_PAR + geom_line(data =  DataList[[n]]$daily , aes(x=Doy, y=ma(PAR_Den_Avg)),position=pd,linetype=linetypes[n])
-      Gr_PAR = Gr_PAR + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=PAR_Den_Avg),position=pd,size=2, shape=shape_list[n], fill=1, alpha = (.4+.15*n))
+      Gr_PAR = Gr_PAR + geom_line(data =  plot_data , aes(x=Doy, y=ma(PAR_Den_Avg)),linetype=linetypes[n], size=.8)
+      Gr_PAR = Gr_PAR + geom_point(data = plot_data , aes(x=Doy, y=PAR_Den_Avg),size=2, shape=shape_list[n], fill=1, alpha = (.4+.15*n))
+      
     }
-    if (!is.null( DataList[[n]]$daily$Tsoil_f)) {
-      Gr_Tsoil = Gr_Tsoil + geom_line(data = DataList[[n]]$daily , aes(x=Doy, y=ma(Tsoil_f)),position=pd,linetype=linetypes[n], size=.8)
-      Gr_Tsoil = Gr_Tsoil + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Tsoil_f),position=pd,size=2, shape=shape_list[n], fill=1,alpha=.5)
+    if (!is.null( plot_data$Tsoil_f)) {
+      Gr_Tsoil = Gr_Tsoil + geom_line(data = plot_data , aes(x=Doy, y=ma(Tsoil_f)),linetype=linetypes[n], size=.8)
+      Gr_Tsoil = Gr_Tsoil + geom_point(data = plot_data , aes(x=Doy, y=Tsoil_f),size=2, shape=shape_list[n], fill=1,alpha=.5)
     }
-    if (!is.null( DataList[[n]]$daily$SWC_1)) {
-      Gr_water = Gr_water + geom_line(data =  DataList[[n]]$daily, aes(x=Doy, y=ma(SWC_1*100)),position=pd,,linetype=linetypes[n])
-      Gr_water = Gr_water + geom_point(data = DataList[[n]]$daily, aes(x=Doy, y=(SWC_1*100)),position=pd,size=2, shape=shape_list[n], fill=1,alpha=.3)
+    if (!is.null( plot_data$SWC_1)) {
+      Gr_water = Gr_water + geom_line(data =  plot_data, aes(x=Doy, y=ma(SWC_1*100)),linetype=linetypes[n], size=.8)
+      Gr_water = Gr_water + geom_point(data = plot_data, aes(x=Doy, y=(SWC_1*100)),size=2, shape=shape_list[n], fill=1,alpha=.3)
+      
     }
-    if (!is.null( DataList[[n]]$daily$Rain_mm_Tot_sums)){
-      Gr_water = Gr_water + geom_rect(data =  DataList[[n]]$daily, aes(x=Doy,xmin=Doy-1,xmax=Doy+1, y=Rain_mm_Tot_sums, ymin=0, xmin=3), fill=1, position=pd, size=3,alpha=(.4+.15*n))
+    if (!is.null( plot_data$Rain_mm_Tot_sums) || !is.null( plot_data$P_tot_sums) ){
+      Gr_water = Gr_water + geom_rect(data =  plot_data, aes(x=Doy,xmin=Doy-1,xmax=Doy+1, y=Rain_mm_Tot_sums, ymin=0, xmin=3), fill=1, position=pd, size=3,alpha=(.2+.15*n))
     }
   }
-  Gr_PAR = Gr_PAR + coord_cartesian( ylim = c(0,595))
+
+ 
   Gr_PAR = Gr_PAR + xlab("Day of the year")
   Gr_PAR = Gr_PAR + ylab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep="")))
   #geom_vline(xintercept = 163, size=1, alpha=1)+
   Gr_PAR = Gr_PAR + theme_few(base_size = 18, base_family = "serif")
-  Gr_PAR = Gr_PAR + theme(axis.title.y = element_text(size = 16, face="bold"))
-  Gr_PAR = Gr_PAR + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_PAR = Gr_PAR + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_PAR = Gr_PAR + theme(plot.margin = unit(c(0,2,0,2), "lines"))
   Gr_PAR = Gr_PAR + theme(axis.title.x = element_blank())
   Gr_PAR = Gr_PAR + theme(axis.text.x = element_blank())
   Gr_PAR = Gr_PAR + theme(axis.ticks.x = element_blank())
   #ggtitle("DRAW mean PAR")
   
+  
   Gr_Tsoil = Gr_Tsoil + xlab("Day of the year")
   Gr_Tsoil = Gr_Tsoil + ylab(expression(bold(paste(T["soil"]," at 5cm depth "," (", ring("C"),")",sep=""))))
   #geom_vline(xintercept = 163, size=3, alpha=.2)
   Gr_Tsoil = Gr_Tsoil + theme_few(base_size = 18, base_family = "serif")
-  Gr_Tsoil = Gr_Tsoil + theme(axis.title.y = element_text(size = 16, face="bold"))
-  Gr_Tsoil = Gr_Tsoil + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Tsoil = Gr_Tsoil + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_Tsoil = Gr_Tsoil + theme(plot.margin = unit(c(0,2,0,2), "lines"))
   Gr_Tsoil = Gr_Tsoil + theme(axis.title.x = element_blank())
   Gr_Tsoil = Gr_Tsoil + theme(axis.text.x = element_blank())
   Gr_Tsoil = Gr_Tsoil + theme(axis.ticks.x = element_blank())
@@ -912,19 +929,47 @@ PlotBiomet = function(DataList) {
   
   #####Volumetric water content VWC A and B
   
-  Gr_water = Gr_water +coord_cartesian(xlim = c(1, 365, by=30),ylim = c(0, 40))
+  
   Gr_water = Gr_water +xlab("Day of the year")
   Gr_water = Gr_water +ylab(expression(bold(paste("SWC at 5cm depth (%)"," ",sep=""))))
-  Gr_water = Gr_water +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+
+  if (!is.null(startDoy) && !is.null(endDoy) ){
+    Gr_water = Gr_water +scale_x_continuous(breaks = round(seq(startDoy,endDoy, by = 30),1))
+    Gr_water = Gr_water +coord_cartesian(xlim = c(startDoy, endDoy),ylim = c(0, 50))
+    Gr_PAR = Gr_PAR +coord_cartesian(xlim = c(startDoy, endDoy))
+    Gr_Tsoil = Gr_Tsoil +coord_cartesian(xlim = c(startDoy, endDoy))
+    } 
+  else if (!is.null(startDoy) || !is.null(endDoy) ) {
+      if (!is.null(endDoy)){
+        Gr_water = Gr_water +scale_x_continuous(breaks = round(seq(min(minDoy)-1,endDoy, by = 30),1))
+        Gr_water = Gr_water +coord_cartesian(xlim = c(min(minDoy), endDoy),ylim = c(0, 50))
+        Gr_PAR = Gr_PAR +coord_cartesian(xlim = c(min(minDoy), endDoy))
+        Gr_Tsoil = Gr_Tsoil +coord_cartesian(xlim = c(min(minDoy), endDoy))
+      }
+      if (!is.null(startDoy)){
+        Gr_water = Gr_water +scale_x_continuous(breaks = round(seq(startDoy,max(maxDoy), by = 30),1))
+        Gr_water = Gr_water +coord_cartesian(xlim = c(startDoy, max(maxDoy)),ylim = c(0, 50))
+        Gr_PAR = Gr_PAR +coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+        Gr_Tsoil = Gr_Tsoil +coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+      }
+  } 
+  else {
+    Gr_water = Gr_water +scale_x_continuous(breaks = round(seq(min(minDoy)-1,max(maxDoy), by = 30),1))
+    Gr_PAR = Gr_PAR +coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+    Gr_Tsoil = Gr_Tsoil +coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+    Gr_water = Gr_water +coord_cartesian(xlim = c(min(minDoy), max(maxDoy)),ylim = c(0, 50))
+  }
+
   Gr_water = Gr_water +theme_few(base_size = 18, base_family = "serif")
-  Gr_water = Gr_water +theme(axis.title.y = element_text(size = 16, face="bold"))
-  Gr_water = Gr_water +theme(plot.margin = unit(c(0,1,0,2), "lines"))
+  Gr_water = Gr_water +theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_water = Gr_water +theme(plot.margin = unit(c(0,2,0,2), "lines"))
   Gr_water = Gr_water +theme(axis.title.x = element_text(size =15, face="bold"))
   #ggtitle("Volumetric water content VWC A and B")
   
-  biomet_graph = grid.arrange(Gr_PAR, Gr_Tsoil, Gr_water, ncol=1)
+   
   
-  return(biomet_graph)
+  grid.newpage()
+  grid.draw(rbind(ggplotGrob(Gr_PAR), ggplotGrob(Gr_Tsoil), ggplotGrob(Gr_water), size = "first"))
   
 }
 
@@ -1316,7 +1361,6 @@ PlotRecovsSWC = function(DataList) {
   #ggtitle("NEE_f daily sums for all year ")
   return(Gr_Reco)
 }
-
 
 # PeakCycle <- function(Data=as.vector(sunspots), SearchFrac=0.02){
 #   # using package "wmtsa"
