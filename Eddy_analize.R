@@ -75,7 +75,7 @@ AllData_A_14$daily$GPP_n = AllData_A_14$daily$Reco - AllData_A_14$daily$NEE
 AllData_B_14$daily$GPP_n = AllData_B_14$daily$Reco - AllData_B_14$daily$NEE
 AllData_A_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
 AllData_B_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
-PlotDiurnal(list(AllData_A_14, AllData_B_14))
+PlotDiurnal(list(AllData_A_14, AllData_O))
 PlotDiurnal(list(AllData_A_13, AllData_B_13))
 SepFlux = PlotFluxSep(list(AllData_A_13, AllData_O))
 SepFlux[[2]] + geom_point(data = chamb , aes(x = DOY, y = A_t),position = .1,size = 4,colour = "red", shape = 15, fill = 1, alpha = .5)

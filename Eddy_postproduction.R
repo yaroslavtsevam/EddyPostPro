@@ -840,25 +840,30 @@ compare_plot = function(tower_list,x_variable,y_variable, type,grouping_varaible
 
 
 
-PlotDiurnal = function(DataList) {
+PlotDiurnal = function(DataList, startM=1, endM=12, title_text="NEE for two towers, hourly") {
   pd = position_dodge(.1)
   shape_list = as.factor(c(5,7,17,19,15,21))
   DP = ggplot()
+
+
+    
   linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   for (n in 1:length(DataList)) {
+    DataList[[n]]$hourly$NEE_f = DataList[[n]]$hourly$NEE_f[DataList[[n]]$hourly$NEE_f$hour_months>=startM & DataList[[n]]$hourly$NEE_f$hour_months<=endM,]
     DP = DP + geom_errorbar(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
     DP = DP + geom_line(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=.5, linetype=linetypes[n])
     DP = DP + geom_point(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=2, shape=shape_list[n], fill=2)
   }
   DP = DP + geom_hline(yintercept = 0, linetype=2)
-  DP = DP + facet_wrap(~hour_months, ncol =3)
+  if((endM-startM>3)|(endM-startM == 2))  {DP = DP + facet_wrap(~hour_months, ncol =3)} else
+  {DP = DP + facet_wrap(~hour_months, ncol =2)}
   DP = DP + xlab("Time of day (Hour)")
   DP = DP + ylab(expression(paste(bold("NEE")," ( ",mu,"mol "," ",CO[2]," ",m^-2," ",s^-1, " )",sep="")))
   #μmol CO2 m-2s-1)")
   DP = DP + theme_few(base_size = 15, base_family = "serif")
   DP = DP + theme(axis.title.y = element_text(size = 15, face="bold"))
   DP = DP + theme(axis.title.x = element_text(size =15, face="bold")) #
-  DP = DP + ggtitle("NEE_f for two towers, hourly")
+  DP = DP + ggtitle(title_text)
   return(DP)
 }
 
