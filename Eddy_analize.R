@@ -37,10 +37,7 @@ AllData_A_14 = FullEddyPostProcess(DataFolderA_14,Site_A,site_polygon_A,events_A
 AllData_B_14 = FullEddyPostProcess(DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 AllData_O = FullEddyPostProcess(DataFolderO,Site_O,site_polygon_O,events_O,Site_coord_and_zone_O, All_towers_height)
 #save(AllData_B, file="AllData_B_2013")
-AllData_O$daily_f = fread("O_13_filled.csv")
-AllData_A_13$daily_f = fread("A_13_filled.csv")
-AllData_A_13$daily_f$SWC_1 = AllData_A_13$daily_f$SWC_1/100
-AllData_O$daily_f$SWC_1 = AllData_O$daily_f$SWC_1/100
+
 #Adding PAR to site B as soon they very close
 AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with = FALSE], by = 'DateTime')
 AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with = FALSE], by = 'DateTime')
@@ -66,8 +63,23 @@ compare_plot(list(AllData_A_13$daily,AllData_O$daily), "DoY", "NEE_f_cumsum","cu
 ##
 ##
 ##
-##
+##For article
 source(file = "Eddy_postproduction.r", local=TRUE)
+AllData_O$daily_f = fread("O_13_filled.csv")
+AllData_A_13$daily_f = fread("A_13_filled.csv")
+AllData_A_13$daily_f$SWC_1 = AllData_A_13$daily_f$SWC_1/100
+AllData_O$daily_f$SWC_1 = AllData_O$daily_f$SWC_1/100
+
+PlotWindRoses(AllData_A_14$dt)
+PlotWindRoses(AllData_O$dt)
+PlotBiomet(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
+PlotDiurnal(list(AllData_A_14, AllData_O), startM=5, endM=8)
+SepFlux = PlotFluxSep(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
+PlotFluxSepCum(list(AllData_A_13, AllData_O))
+
+
+
+
 AllData_A_14$daily = AddDailyChambers("A_2014.csv",AllData_A_14)
 AllData_B_14$daily$Rs_t = AddDailyChambers("A_2014.csv",AllData_B_14)
 PlotBiomet(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
@@ -75,7 +87,7 @@ AllData_A_14$daily$GPP_n = AllData_A_14$daily$Reco - AllData_A_14$daily$NEE
 AllData_B_14$daily$GPP_n = AllData_B_14$daily$Reco - AllData_B_14$daily$NEE
 AllData_A_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
 AllData_B_14$daily$GPP_n_cum = cumsum(AllData_A_14$daily$GPP_n)
-PlotDiurnal(list(AllData_A_14, AllData_O))
+
 PlotDiurnal(list(AllData_A_13, AllData_B_13))
 SepFlux = PlotFluxSep(list(AllData_A_13, AllData_O))
 SepFlux[[2]] + geom_point(data = chamb , aes(x = DOY, y = A_t),position = .1,size = 4,colour = "red", shape = 15, fill = 1, alpha = .5)

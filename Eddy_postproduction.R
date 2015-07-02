@@ -996,31 +996,41 @@ PlotBiomet = function(DataList, filled=FALSE, startDoy, endDoy) {
   
 }
 
-PlotFluxSep = function(DataList) {
+PlotFluxSep = function(DataList,filled = FALSE, startDoy, endDoy) {
+  
   pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   Gr_NEE =  ggplot()
   Gr_Reco =   ggplot()
   Gr_GPP =  ggplot()
-  
+  maxDoy = 1
+  minDoy = 365
   for(n in 1:length(DataList)) {
+    if (filled == TRUE ){
+      plot_data = DataList[[n]]$daily_f
+    } else {
+      plot_data = DataList[[n]]$daily
+    }
+    maxDoy = c(maxDoy, max(plot_data$Doy))
+    minDoy = c(minDoy, min(plot_data$Doy)) 
+    
     pd = position_dodge(.1*n)
-    Gr_NEE = Gr_NEE + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(NEE_f_sums* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_NEE = Gr_NEE + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=NEE_f_sums* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+    Gr_NEE = Gr_NEE + geom_line(data = plot_data, aes(x=Doy, y=ma(NEE_f_sums* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_NEE = Gr_NEE + geom_point(data = plot_data , aes(x=Doy, y=NEE_f_sums* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
     
    if(any(names(DataList[[n]]$daily)=="Rs_t")){
-     Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Rs_t),position=pd,size=2, shape=6,alpha=1, color="red",fill="red")
+     Gr_Reco = Gr_Reco + geom_point(data = plot_data , aes(x=Doy, y=Rs_t),position=pd,size=2, shape=6,alpha=1, color="red",fill="red")
    }
    if(any(names(DataList[[n]]$daily)=="Rs_n")){
-     Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Rs_n),position=pd,size=2, shape=7,alpha=1, color="blue",fill="blue")
+     Gr_Reco = Gr_Reco + geom_point(data = plot_data , aes(x=Doy, y=Rs_n),position=pd,size=2, shape=7,alpha=1, color="blue",fill="blue")
    }
 
-    Gr_Reco = Gr_Reco + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_Reco = Gr_Reco + geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+    Gr_Reco = Gr_Reco + geom_line(data = plot_data, aes(x=Doy, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_Reco = Gr_Reco + geom_point(data = plot_data, aes(x=Doy, y=Reco* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill = n, alpha = .5)
     
-    Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=Doy, y=GPP* 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+    Gr_GPP = Gr_GPP +geom_line(data = plot_data, aes(x=Doy, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_GPP = Gr_GPP +geom_point(data = plot_data, aes(x=Doy, y=GPP * 12 * 18/10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
     
   }
   Gr_NEE = Gr_NEE + geom_hline(yintercept = 0, size=.5, linetype = 2)
@@ -1047,7 +1057,7 @@ PlotFluxSep = function(DataList) {
   #Gr_Reco = Gr_Reco + geom_vline(xintercept = 163, size=3, alpha=.2)
   Gr_Reco = Gr_Reco + ylab(expression(paste(bold("Reco")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
   #μmol CO2 m-2s-1)")+
-  Gr_Reco = Gr_Reco + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  #Gr_Reco = Gr_Reco + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   Gr_Reco = Gr_Reco + theme_few(base_size = 15, base_family = "serif")
   Gr_Reco = Gr_Reco + theme(axis.title.y = element_text(size = 15, face="bold"))
   Gr_Reco = Gr_Reco + theme(plot.margin = unit(c(0,1,0,1), "lines"))
@@ -1064,14 +1074,45 @@ PlotFluxSep = function(DataList) {
   Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
   #Gr_GPP = Gr_GPP +geom_vline(xintercept = 163, size=3, alpha=.2)
   #μmol CO2 m-2s-1)")+
-  Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  #Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
   Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
   Gr_GPP = Gr_GPP +theme(axis.title.y = element_text(size = 15, face="bold"))
   Gr_GPP = Gr_GPP +theme(axis.title.x = element_text(size =15, face="bold"))
   Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(0,1,0,1), "lines"))
   #ggtitle("GPP daily sums for all year ")
-  return(grid.arrange(Gr_NEE, Gr_Reco, Gr_GPP, ncol=1))
+  
+  if (!is.null(startDoy) && !is.null(endDoy) ){
+    Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(startDoy,endDoy, by = 30),1))
+    Gr_GPP = Gr_GPP +coord_cartesian(xlim = c(startDoy, endDoy))
+    Gr_NEE = Gr_NEE +coord_cartesian(xlim = c(startDoy, endDoy))
+    Gr_Reco = Gr_Reco +coord_cartesian(xlim = c(startDoy, endDoy))
+  } 
+  else if (!is.null(startDoy) || !is.null(endDoy) ) {
+    if (!is.null(endDoy)){
+      Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(min(minDoy)-1,endDoy, by = 30),1))
+      Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(min(minDoy), endDoy))
+      Gr_NEE = Gr_NEE + coord_cartesian(xlim = c(min(minDoy), endDoy))
+      Gr_Reco = Gr_Reco + coord_cartesian(xlim = c(min(minDoy), endDoy))
+    }
+    if (!is.null(startDoy)){
+      Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(startDoy,max(maxDoy), by = 30),1))
+      Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+      Gr_NEE = Gr_NEE + coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+      Gr_Reco = Gr_Reco + coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+    }
+  } 
+  else {
+    Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(min(minDoy)-1,max(maxDoy), by = 30),1))
+    Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+    Gr_NEE = Gr_NEE + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+    Gr_Reco = Gr_Reco + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+  }
+  
+  #
+  grid.newpage()
+  return(grid.draw(rbind(ggplotGrob(Gr_NEE), ggplotGrob(Gr_Reco), ggplotGrob(Gr_GPP), size = "first")))
+
 }
 
 
