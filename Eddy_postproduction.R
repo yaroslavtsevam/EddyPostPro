@@ -844,17 +844,28 @@ PlotDiurnal = function(DataList, startM=1, endM=12, title_text="NEE for two towe
   pd = position_dodge(.1)
   shape_list = as.factor(c(5,7,17,19,15,21))
   DP = ggplot()
-
-
-    
   linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   for (n in 1:length(DataList)) {
+    rise = as.vector(by(DataList[[n]]$dt[,c("hour","SolElev","Doy"), with=FALSE], DataList[[n]]$dt$month_number, function(x) mean(by(x, x$Doy, function(y) return(y$hour[ min(which(y$SolElev>0)) ])))))
+    rise=rise-2
+    #finding mean down hour per month
+    down = as.vector(by(DataList[[n]]$dt[,c("hour","SolElev","Doy"), with=FALSE], DataList[[n]]$dt$month_number, function(x) mean(by(x, x$Doy, function(y) return(y$hour[ max(which(y$SolElev>0)) ])))))   
+    down=down-2
+    hour_months = as.numeric(levels(as.factor(DataList[[n]]$hourly$NEE_f$hour_months)))
+    downrisedf = data_frame(hour_months,rise,down)
     DataList[[n]]$hourly$NEE_f = DataList[[n]]$hourly$NEE_f[DataList[[n]]$hourly$NEE_f$hour_months>=startM & DataList[[n]]$hourly$NEE_f$hour_months<=endM,]
+    downrisedf = downrisedf[downrisedf$hour_months>=startM & downrisedf$hour_months<=endM,]
     DP = DP + geom_errorbar(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
     DP = DP + geom_line(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=.5, linetype=linetypes[n])
     DP = DP + geom_point(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=2, shape=shape_list[n], fill=2)
+    DP = DP + geom_vline(aes(xintercept = rise),downrisedf, linetype=linetypes[n])
+    DP = DP + geom_vline(aes(xintercept = down),downrisedf, linetype=linetypes[n])
+    
   }
+  
+  
   DP = DP + geom_hline(yintercept = 0, linetype=2)
+  #DP = DP + facet_wrap(~hour_months, ncol =3)
   if((endM-startM>3)|(endM-startM == 2))  {DP = DP + facet_wrap(~hour_months, ncol =3)} else
   {DP = DP + facet_wrap(~hour_months, ncol =2)}
   DP = DP + xlab("Time of day (Hour)")
@@ -863,6 +874,7 @@ PlotDiurnal = function(DataList, startM=1, endM=12, title_text="NEE for two towe
   DP = DP + theme_few(base_size = 15, base_family = "serif")
   DP = DP + theme(axis.title.y = element_text(size = 15, face="bold"))
   DP = DP + theme(axis.title.x = element_text(size =15, face="bold")) #
+  #DP = DP + ggtitle("NEE_f for two towers, hourly")
   DP = DP + ggtitle(title_text)
   return(DP)
 }
@@ -1134,7 +1146,7 @@ PlotGPPvsTsoil = function(DataList, by = FALSE) {
       DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
     } 
     #Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=Tsoil, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=Tsoil, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, fill=n,alpha=.7)
     
   }
   if (by == "months")
@@ -1177,7 +1189,7 @@ PlotGPPvsPAR = function(DataList, by = FALSE) {
     {
       DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
     } 
-    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=PAR_Den_Avg, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=PAR_Den_Avg, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, fill=n,alpha=.7)
     
   }
   if (by == "months")
@@ -1220,7 +1232,7 @@ PlotGPPvsSWC = function(DataList, by=FALSE) {
     pd = position_dodge(.1*n)
  
     #Gr_GPP = Gr_GPP +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(GPP * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=SWC_1*100, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    Gr_GPP = Gr_GPP +geom_point(data = DataList[[n]]$daily , aes(x=SWC_1*100, y=GPP* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, fill=n,alpha=.7)
     
   }
   if (by == "months")
@@ -1263,7 +1275,7 @@ PlotRecovsTsoil = function(DataList, by = FALSE) {
       DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
     }  
     #Gr_Reco = Gr_Reco +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=Tsoil, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=Tsoil, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, fill=n,alpha=.7)
     
   }
   
@@ -1309,7 +1321,7 @@ PlotRecovsPAR = function(DataList, by=FALSE) {
     {
       DataList[[n]]$daily = DataList[[n]]$daily[which(!is.na(DataList[[n]]$daily$moisture_levels)),]
     }  
-    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=PAR_Den_Avg, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)    
+    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=PAR_Den_Avg, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, fill=n,alpha=.7)    
   }
   
   if (by == "months")
@@ -1348,7 +1360,7 @@ PlotRecovsSWC = function(DataList) {
     pd = position_dodge(.1*n)
     
     #Gr_Reco = Gr_Reco +geom_line(data = DataList[[n]]$daily, aes(x=Tsoil, y=ma(Reco * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
-    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=SWC_1*100, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, , fill=n,alpha=.7)
+    Gr_Reco = Gr_Reco +geom_point(data = DataList[[n]]$daily , aes(x=SWC_1*100, y=Reco* 12 * 18/10000),shape=shape_list[n], fill=color_list[n],position=pd,size=3, fill=n,alpha=.7)
     
   }
   #Gr_Reco = Gr_Reco + 
@@ -1366,6 +1378,8 @@ PlotRecovsSWC = function(DataList) {
   #ggtitle("NEE_f daily sums for all year ")
   return(Gr_Reco)
 }
+
+#a=3
 
 # PeakCycle <- function(Data=as.vector(sunspots), SearchFrac=0.02){
 #   # using package "wmtsa"
@@ -1398,8 +1412,3 @@ PlotRecovsSWC = function(DataList) {
 
 #package.skeleton(list = c("read_eddy_data","read_biomet_data","join_for_gapfilling","max_footprints","filter_by_quality","reddyproc_gapfill","add_separators","add_events","PlotWindRoses","footprint_for_angle","fill_gap_by_date"), name = "EddyPostProcess")
 
-
-
-
-#write.csv(AllData_A, file="Site_A_all.csv")
-#write.csv(Combined, file="Two_towers.csv")

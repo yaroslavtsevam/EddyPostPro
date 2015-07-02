@@ -85,6 +85,9 @@ PlotGPPvsTsoil(list(AllData_A_13, AllData_O),by = "SWC")
 PlotGPPvsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotGPPvsSWC(list(AllData_A_13, AllData_O))
 
+
+         
+
 PlotRecovsTsoil(list(AllData_A_14, AllData_B_14))
 PlotRecovsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotRecovsSWC(list(AllData_A_13, AllData_O))
