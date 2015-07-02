@@ -996,14 +996,14 @@ PlotBiomet = function(DataList, filled=FALSE, startDoy, endDoy) {
   
 }
 
-PlotFluxSep = function(DataList,filled = FALSE, startDoy, endDoy) {
+PlotFluxSep = function(DataList,filled = FALSE, startDoy=1, endDoy=12) {
   
   pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
-  Gr_NEE =  ggplot()
-  Gr_Reco =   ggplot()
-  Gr_GPP =  ggplot()
+  Gr_NEE = ggplot()
+  Gr_Reco = ggplot()
+  Gr_GPP = ggplot()
   maxDoy = 1
   minDoy = 365
   for(n in 1:length(DataList)) {
@@ -1049,8 +1049,7 @@ PlotFluxSep = function(DataList,filled = FALSE, startDoy, endDoy) {
   #ggtitle("NEE_f daily sums for all year ")
   
   ###### Reco
-  
-  
+
   Gr_Reco = Gr_Reco + geom_hline(yintercept = 0, size=.5, linetype = 2)
   #Gr_Reco = Gr_Reco + geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_Reco = Gr_Reco + xlab("Day of the year")
@@ -1108,73 +1107,102 @@ PlotFluxSep = function(DataList,filled = FALSE, startDoy, endDoy) {
     Gr_NEE = Gr_NEE + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
     Gr_Reco = Gr_Reco + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
   }
-  
-  #
   grid.newpage()
   return(grid.draw(rbind(ggplotGrob(Gr_NEE), ggplotGrob(Gr_Reco), ggplotGrob(Gr_GPP), size = "first")))
-
 }
 
 
-PlotFluxSepCum = function(DataList){
+PlotFluxSepCum  = function(DataList,filled = FALSE, startDoy=1, endDoy=12) {
+  
   pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
-  
-  Gr_NEE_cum =  ggplot()
-  Gr_Reco_cum =  ggplot()
-  Gr_GPP_cum =ggplot()
-  
+  Gr_NEE_cum = ggplot()
+  Gr_Reco_cum = ggplot()
+  Gr_GPP_cum = ggplot()
+  maxDoy = 1
+  minDoy = 365
   for(n in 1:length(DataList)) {
+    if (filled == TRUE ){
+      plot_data = DataList[[n]]$daily_f
+    } else {
+      plot_data = DataList[[n]]$daily
+    }
+    maxDoy = c(maxDoy, max(plot_data$Doy))
+    minDoy = c(minDoy, min(plot_data$Doy)) 
     pd = position_dodge(.1*n)
-    Gr_GPP_cum = Gr_GPP_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum(((Reco - NEE_f_sums) * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
-    Gr_NEE_cum = Gr_NEE_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((NEE_f_sums * 12*18 /10000))), size=1, linetype =linetypes[n], position=pd)
+  plot_data[is.na(plot_data)] = 0 #because cumsum don't want to work with NA
+    Gr_GPP_cum = Gr_GPP_cum + geom_line(data = plot_data, aes(x=Doy, y=cumsum(((GPP) * 12*18 /10000))), size = 1, linetype = linetypes[n], position=pd)
+    Gr_NEE_cum = Gr_NEE_cum + geom_line(data = plot_data, aes(x=Doy, y=cumsum((NEE_f_sums * 12*18 /10000))), size = 1, linetype = linetypes[n], position=pd)
     #xlab("Day of the year ")+
-    Gr_Reco_cum = Gr_Reco_cum + geom_line(data = DataList[[n]]$daily, aes(x=Doy, y=cumsum((Reco * 12*18 /10000))), size=1,linetype =linetypes[n], position=pd)
+    Gr_Reco_cum = Gr_Reco_cum + geom_line(data = plot_data, aes(x=Doy, y=cumsum((Reco * 12*18 /10000))), size = 1, linetype = linetypes[n], position=pd)
   }
   
-  Gr_NEE_cum = Gr_NEE_cum +ylab(expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
+  Gr_NEE_cum = Gr_NEE_cum + ylab(expression(paste(bold("Cumulative NEE")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
   #μmol CO2 m-2s-1)")+
-  Gr_NEE_cum = Gr_NEE_cum +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  #Gr_NEE_cum = Gr_NEE_cum +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   Gr_NEE_cum = Gr_NEE_cum +geom_hline(yintercept = 0, linetype=2)
-  Gr_NEE_cum = Gr_NEE_cum + theme_few(base_size = 15, base_family = "serif")
-  Gr_NEE_cum = Gr_NEE_cum +theme(axis.title.y = element_text(size =16, face="bold"))
-  Gr_NEE_cum = Gr_NEE_cum +theme(axis.title.x = element_blank())
-  Gr_NEE_cum = Gr_NEE_cum +theme(axis.text.x = element_blank())
-  Gr_NEE_cum = Gr_NEE_cum +theme(plot.margin = unit(c(0,1,0,1), "lines"))
-  Gr_NEE_cum = Gr_NEE_cum +theme(axis.ticks.x = element_blank())
+  Gr_NEE_cum = Gr_NEE_cum + theme_few(base_size = 14, base_family = "serif")
+  Gr_NEE_cum = Gr_NEE_cum + theme(axis.title.y = element_text(size =14, face="bold"))
+  Gr_NEE_cum = Gr_NEE_cum + theme(axis.title.x = element_blank())
+  Gr_NEE_cum = Gr_NEE_cum + theme(axis.text.x = element_blank())
+  Gr_NEE_cum = Gr_NEE_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_NEE_cum = Gr_NEE_cum + theme(axis.ticks.x = element_blank())
   #+ggtitle("NEE_f cumulation for two towers total")
-  
-  
-  
-  Gr_Reco_cum = Gr_Reco_cum + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+ 
+  #Gr_Reco_cum = Gr_Reco_cum + scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   #xlab("Day of the year ")+
-  Gr_Reco_cum = Gr_Reco_cum + ylab(expression(paste(bold("Cumulative Reco")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep="")))
-  #μmol CO2 m-2s-1)")+
-  Gr_Reco_cum = Gr_Reco_cum + geom_hline(yintercept = 0, linetype=2)
-  Gr_Reco_cum = Gr_Reco_cum + theme_few(base_size = 15, base_family = "serif")
-  Gr_Reco_cum = Gr_Reco_cum + theme(axis.title.y = element_text(size = 16, face="bold",hjust=0.2, vjust=1,lineheight = 45))
-  Gr_Reco_cum = Gr_Reco_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_Reco_cum = Gr_Reco_cum + ylab(expression(paste(bold("Cumulative Reco")," ( g "," ",C[CO[2]]," ",m^-2," "," )",sep=""))) 
+  Gr_Reco_cum = Gr_Reco_cum + geom_hline(yintercept = 0, linetype=2) 
+  Gr_Reco_cum = Gr_Reco_cum + theme_few(base_size = 14, base_family = "serif") 
+  Gr_Reco_cum = Gr_Reco_cum + theme(axis.title.y = element_text(size = 14, face="bold", hjust=0.2, vjust=1, lineheight = 45))
+  Gr_Reco_cum = Gr_Reco_cum + theme(plot.margin = unit(c(0,1,0,1), "lines" ))
   Gr_Reco_cum = Gr_Reco_cum + theme(axis.title.x = element_blank())
   Gr_Reco_cum = Gr_Reco_cum + theme(axis.text.x = element_blank())
   Gr_Reco_cum = Gr_Reco_cum + theme(axis.ticks.x = element_blank())
-  # ggtitle("NEE_f cumulation for two towers total")
+  # ggtitle("NEE_f cumulation for two towers total") 
   
-  Gr_GPP_cum =Gr_GPP_cum +  scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
-  Gr_GPP_cum =Gr_GPP_cum +  xlab("Day of the year ")
-  Gr_GPP_cum =Gr_GPP_cum +  ylab(expression(paste(bold("Cumulative  GPP")," ( g "," ",C[CO[2]]," ",m^-2," )",sep="")))
+  #Gr_GPP_cum = Gr_GPP_cum +  scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_GPP_cum = Gr_GPP_cum + xlab("Day of the year ")
+  Gr_GPP_cum = Gr_GPP_cum + ylab(expression(paste(bold("Cumulative  GPP")," ( g "," ",C[CO[2]]," ",m^-2," )",sep="")))
   #μmol CO2 m-2s-1)")+
-  Gr_GPP_cum =Gr_GPP_cum +  geom_hline(yintercept = 0, linetype=2)
-  Gr_GPP_cum =Gr_GPP_cum +theme_few(base_size = 15, base_family = "serif")
-  Gr_GPP_cum =Gr_GPP_cum + theme(axis.title.y = element_text(size =16, face="bold"))
-  Gr_GPP_cum =Gr_GPP_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
-  Gr_GPP_cum =Gr_GPP_cum + theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_GPP_cum = Gr_GPP_cum + geom_hline(yintercept = 0, linetype=2)
+  Gr_GPP_cum = Gr_GPP_cum + theme_few(base_size = 14, base_family = "serif")
+  Gr_GPP_cum = Gr_GPP_cum + theme(axis.title.y = element_text(size =14, face="bold"))
+  Gr_GPP_cum = Gr_GPP_cum + theme(plot.margin = unit(c(0,1,0,1), "lines"))
+  Gr_GPP_cum = Gr_GPP_cum + theme(axis.title.x = element_text(size =15, face="bold"))
   
-  return(grid.arrange(Gr_NEE_cum, Gr_Reco_cum, Gr_GPP_cum, ncol=1))
+  if (!is.null(startDoy) && !is.null(endDoy) ){
+    Gr_GPP = Gr_GPP_cum + scale_x_continuous(breaks = round(seq(startDoy,endDoy, by = 30),1))
+    Gr_GPP = Gr_GPP_cum + coord_cartesian(xlim = c(startDoy, endDoy))
+    Gr_NEE = Gr_NEE_cum + coord_cartesian(xlim = c(startDoy, endDoy))
+    Gr_Reco = Gr_Reco_cum + coord_cartesian(xlim = c(startDoy, endDoy))
+  } 
+  else if (!is.null(startDoy) || !is.null(endDoy) ) {
+    if (!is.null(endDoy)){
+      Gr_GPP = Gr_GPP_cum + scale_x_continuous(breaks = round(seq(min(minDoy)-1,endDoy, by = 30),1))
+      Gr_GPP = Gr_GPP_cum + coord_cartesian(xlim = c(min(minDoy), endDoy))
+      Gr_NEE = Gr_NEE_cum + coord_cartesian(xlim = c(min(minDoy), endDoy))
+      Gr_Reco = Gr_Reco_cum + coord_cartesian(xlim = c(min(minDoy), endDoy))
+    }
+    if (!is.null(startDoy)){
+      Gr_GPP = Gr_GPP_cum + scale_x_continuous(breaks = round(seq(startDoy,max(maxDoy), by = 30),1))
+      Gr_GPP = Gr_GPP_cum + coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+      Gr_NEE = Gr_NEE_cum + coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+      Gr_Reco = Gr_Reco_cum + coord_cartesian(xlim = c(startDoy, max(maxDoy)))
+    }
+  } 
+  else {
+    Gr_GPP = Gr_GPP_cum + scale_x_continuous(breaks = round(seq(min(minDoy)-1,max(maxDoy), by = 30),1))
+    Gr_GPP = Gr_GPP_cum + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+    Gr_NEE = Gr_NEE_cum + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+    Gr_Reco = Gr_Reco_cum + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+  }
+
+  grid.newpage()
+  return(grid.draw(rbind(ggplotGrob(Gr_NEE_cum), ggplotGrob(Gr_Reco_cum), ggplotGrob(Gr_GPP_cum), size = "first")))
   
 }
-
-
 
 # PlotGPPvsTsoil ----------------------------------------------------------
 

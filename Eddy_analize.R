@@ -75,7 +75,7 @@ PlotWindRoses(AllData_O$dt)
 PlotBiomet(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
 PlotDiurnal(list(AllData_A_14, AllData_O), startM=5, endM=8)
 SepFlux = PlotFluxSep(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
-PlotFluxSepCum(list(AllData_A_13, AllData_O))
+PlotFluxSepCum(list(AllData_A_13, AllData_O), startDoy = 60, endDoy = 330)
 
 
 
