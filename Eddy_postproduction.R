@@ -846,15 +846,21 @@ PlotDiurnal = function(DataList, startM=1, endM=12, title_text="NEE for two towe
   DP = ggplot()
   linetypes=c( "solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   for (n in 1:length(DataList)) {
+    #finding mean rise hour per month
     rise = as.vector(by(DataList[[n]]$dt[,c("hour","SolElev","Doy"), with=FALSE], DataList[[n]]$dt$month_number, function(x) mean(by(x, x$Doy, function(y) return(y$hour[ min(which(y$SolElev>0)) ])))))
     rise=rise-2
     #finding mean down hour per month
     down = as.vector(by(DataList[[n]]$dt[,c("hour","SolElev","Doy"), with=FALSE], DataList[[n]]$dt$month_number, function(x) mean(by(x, x$Doy, function(y) return(y$hour[ max(which(y$SolElev>0)) ])))))   
     down=down-2
+    #and putting it with it's month to df
     hour_months = as.numeric(levels(as.factor(DataList[[n]]$hourly$NEE_f$hour_months)))
     downrisedf = data_frame(hour_months,rise,down)
+    
+    #Subseting everything by startM and EndM
     DataList[[n]]$hourly$NEE_f = DataList[[n]]$hourly$NEE_f[DataList[[n]]$hourly$NEE_f$hour_months>=startM & DataList[[n]]$hourly$NEE_f$hour_months<=endM,]
     downrisedf = downrisedf[downrisedf$hour_months>=startM & downrisedf$hour_months<=endM,]
+    
+    #Plotting
     DP = DP + geom_errorbar(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means, ymin=hour_means-hour_errors, ymax=hour_means+hour_errors), linetype=1,size=.1, width=.4, position=pd)
     DP = DP + geom_line(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=.5, linetype=linetypes[n])
     DP = DP + geom_point(data = DataList[[n]]$hourly$NEE_f, aes(x=hour, y=hour_means),position=pd,size=2, shape=shape_list[n], fill=2)
