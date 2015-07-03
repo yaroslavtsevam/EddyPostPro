@@ -67,15 +67,14 @@ compare_plot(list(AllData_A_13$daily,AllData_O$daily), "DoY", "NEE_f_cumsum","cu
 source(file = "Eddy_postproduction.r", local=TRUE)
 AllData_O$daily_f = fread("O_13_filled.csv")
 AllData_A_13$daily_f = fread("A_13_filled.csv")
-AllData_A_13$daily_f$SWC_1 = AllData_A_13$daily_f$SWC_1/100
-AllData_O$daily_f$SWC_1 = AllData_O$daily_f$SWC_1/100
+#Разобраться со скользящим средним
 
 PlotWindRoses(AllData_A_14$dt)
 PlotWindRoses(AllData_O$dt)
-PlotBiomet(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
-PlotDiurnal(list(AllData_A_14, AllData_O), startM=5, endM=8)
-SepFlux = PlotFluxSep(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 60, endDoy = 330)
-PlotFluxSepCum(list(AllData_A_13, AllData_O), startDoy = 60, endDoy = 330)
+PlotBiomet(list(AllData_A_13, AllData_O, AllData_A_14), filled = TRUE, startDoy = 120, endDoy = 270)
+PlotDiurnal(list(AllData_A_14, AllData_O), startM=4, endM=9)
+PlotFluxSep(list(AllData_A_13, AllData_O,AllData_A_14), filled = FALSE, startDoy = 120, endDoy = 320)
+PlotFluxSepCum(list(AllData_A_13, AllData_O), startDoy = 120, endDoy = 320)
 PlotGPPVegetationAligned(list(AllData_A_13, AllData_O), filled = TRUE)
 
 
@@ -98,7 +97,7 @@ PlotGPPvsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotGPPvsSWC(list(AllData_A_13, AllData_O))
 
 
-         
+
 
 PlotRecovsTsoil(list(AllData_A_14, AllData_B_14))
 PlotRecovsPAR(list(AllData_A_13, AllData_O),by = "SWC")
@@ -115,7 +114,7 @@ PlotFluxAlignedDate(datalist,events, start_event)
 #Сделать график зависимости GPP от фазы
 #Biomet урожай - 226 день, а всего 315, обрезать 230 днем PAR - убрать нули и линии, белые кружки и черные, SWC - заполнить пропуски
 
-#GPP Reco Nee - обрезать 230 днем, 
+#GPP Reco Nee - обрезать 230 днем,
 #Сбросить данные для O и А - получасовые убрать Со2
 #GPP - phase aligned - till 120d (110-230)
 #всходы -11д, кущение - 31д, выход в трубку - 41д, молочгая спелость - 53д, восковая спелость - 64д
@@ -137,10 +136,10 @@ AllData_O$daily[!is.na(AllData_O$daily$moisture_levels)]
 # Check what is in reddy part
 
 AllData_A_13$reddy$sPlotDailySums('NEE_f','NEE_fsd')
-AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
-AllData_A_13$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
-AllData_B_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
-AllData_B_13$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3) 
+AllData_A_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3)
+AllData_A_13$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3)
+AllData_B_14$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3)
+AllData_B_13$reddy$sMRFluxPartition(Lat_deg.n=55.83708, Long_deg.n=37.56772, TimeZone_h.n=3)
 AllData_A_14$reddy$sPlotDailySums('GPP_fqc')
 AllData_A_13$reddy$sPlotHHFluxesY('GPP_fqc', Year.i=2013)
 
@@ -381,9 +380,9 @@ for (i in 1:length(periods_a))
 #### Dependecies from factors  - useless for NEE, we need to deconstruct it###########
 
 ggplot() +
-  
+
   geom_point(data = Daily_A_114 , aes(x=SWC_1*100, y=NEE_f_sums* 12 * 18/10000),position=pd,size=2, shape=1, fill="white")+
-  
+
   geom_point(data = Daily_A_114 , aes(x=SWC_1*100, y=GPP*12 * 18/10000),position=pd,size=2, shape=2, fill="black")+
   geom_point(data = Daily_A_114 , aes(x=SWC_1*100, y=Reco* 12 * 18/10000),position=pd,size=2, shape=3, fill="grey")+
   geom_hline(yintercept = 0, size=.5, linetype = 2)+
@@ -418,11 +417,11 @@ ancova(NEE_f_sums ~ Tsoil_f + moisture_levels, data = Daily_A_114, layout=c(5,1)
 #### Dependecies from factors  - useless for NEE, we need to deconstruct it###########
 
 ggplot() +
-  
+
   geom_point(data = AllData_A_14$daily  , aes(x=PAR_Den_Avg, y=GPP*12*18/10000),position=pd,size=2, shape=21, fill="white")+
-  
+
   geom_hline(yintercept = 0, size=.5, linetype = 2)+
-  
+
   ylab(expression(paste(bold(" GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))+
   xlab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep=""))) +
   #μmol CO2 m-2s-1)")+
@@ -439,7 +438,7 @@ ggplot() +
 ggplot() +
   geom_line(data =  AllData_A_14$daily , aes(x=Doy, y=ma(PAR_Den_Avg)),position=pd) +
   geom_point(data = AllData_A_14$daily , aes(x=Doy, y=PAR_Den_Avg),position=pd,size=3, shape=21, fill="white")+
-  
+
   xlab("Day of the year") +
   ylab(expression(paste(bold("PAR "),"( ", mu,"mol", " ",m^-2," ",s^-1," )",sep=""))) +
   theme_few(base_size = 20, base_family = "serif")+
@@ -482,7 +481,7 @@ ggplot() +
 Gr_Tsoil = ggplot() +
   geom_line(data = AllData_A_14$daily , aes(x=Doy, y=ma(Tsoil_f)),position=pd, size=.8) +
   geom_point(data = AllData_A_14$daily , aes(x=Doy, y=Tsoil_f),position=pd,size=2, shape=21, fill="white",alpha=.5)+
-  
+
   geom_line(data = AllData_B_14$daily , aes(x=Doy, y=ma(Tsoil_f)),position=pd,size=.8,linetype=2) +
   geom_point(data = AllData_B_14$daily , aes(x=Doy, y=Tsoil_f),position=pd,size=2, shape=21, fill="black",alpha=.5)+
   xlab("Day of the year") +
