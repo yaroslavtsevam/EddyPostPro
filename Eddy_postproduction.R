@@ -1509,7 +1509,28 @@ PlotRecovsSWC = function(DataList) {
   #ggtitle("NEE_f daily sums for all year ")
   return(Gr_Reco)
 }
-
+FindNAlengths = function(x){
+  
+  m = as.numeric(is.na(x))
+  l=0
+  res=c()
+  for(n in 1:length(M)){
+    
+    if (m[n]==1){
+      l=l+1
+    }else {
+      if (l>0){res=c(res, l)}
+      l=0
+    }
+  }
+  
+  lev = as.numeric(levels(as.factor(res)))
+  counter = c()
+  for(n in 1:length(lev)){
+    counter = c(counter, length(which(A_na == lev[n])))
+  }
+  return(data.frame(lev,counter))
+}
 #a=3
 
 # PeakCycle <- function(Data=as.vector(sunspots), SearchFrac=0.02){
