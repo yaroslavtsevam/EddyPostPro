@@ -11,23 +11,29 @@ DataFolderB_13 = 'Data_B/'
 DataFolderA_14 = 'Data_A_14/'
 DataFolderB_14 = 'Data_B_14/'
 DataFolderO = 'Data_O'
+DataFolderE_14 = 'Data_E'
 Site_A = c(410041, 6188869)
 Site_B = c(410155, 6188893)
 Site_O = c(325574, 5668981)
+Site_E = c(409585, 6186761)
 site_polygon  = data.frame(as.numeric(c(409957,410179,410243,410014)),as.numeric(c(6188984,6189058,6188849,6188774)))
 site_polygon_A  = data.frame(as.numeric(c(410109.5,410012.7,409977.3,410086)),as.numeric(c(6188807,6188739,6188905,6188942)))
 site_polygon_B  = data.frame(as.numeric(c(410188,410225,410128,410086)),as.numeric(c(6188974,6188840,6188811,6188942)))
-forest_polygon  = data.frame(as.numeric(c(409472,409943,409532,408959,408587,408471,408353,408124,408048,408083,408088,408041,408038,408237,408524,408547,409090 ,409323,409550 ,409328,409535,409454)),as.numeric(c(6186623,6186720,6187669,6187536,6187517,6187632,6187882,6188235,6188193,6187844,6187575,6187405,6187222 ,6186987,6186310,6186133,6185574,6185407,6185467,6186180,6186267,6186542)))
+site_polygon_Ef = data.frame(as.numeric(c(409472,409943,409532,408959,408587,408471,408353,408124,408048,408083,408088,408041,408038,408237,408524,408547,409090 ,409323,409550 ,409328,409535,409454)),as.numeric(c(6186623,6186720,6187669,6187536,6187517,6187632,6187882,6188235,6188193,6187844,6187575,6187405,6187222 ,6186987,6186310,6186133,6185574,6185407,6185467,6186180,6186267,6186542)))
+site_polygon_Et = data.frame(as.numeric(c(409567,412431,412519,412673,412474,412004,411500,410776,409979,409517)),as.numeric(c(6186789,6187394,6186717,6186042,6185251,6184665,6184219,6183814,6183883,6184412)))
 site_polygon_O = data.frame(as.numeric(c(325578,325965,325381,324931)), as.numeric(c(5669372,5669262,5667644,5667793 )))
 events_O = 'Data_O/events.csv'
 events_A = 'Data_A/events.csv'
 events_B = 'Data_B/events.csv'
+events_E = 'Data_B/events.csv'
 Site_coord_and_zone = c(55.837631, 37.564302, 4)
 Site_coord_and_zone_O = c(51.14567, 36.50624, 4)
 All_towers_height  = 1.5
+E_tower_height  = 34
 
 
-
+AllData_E_14f = FullEddyPostProcess(DataFolderE_14,Site_E,site_polygon_Ef,events_E,Site_coord_and_zone,E_tower_height)
+AllData_E_14t = FullEddyPostProcess(DataFolderE_14,Site_E,site_polygon_Et,events_E,Site_coord_and_zone,E_tower_height)
 AllData_A_13 = FullEddyPostProcess(DataFolderA_13,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
 
 AllData_B_13 = FullEddyPostProcess(DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
@@ -69,14 +75,19 @@ AllData_O$daily_f = fread("O_13_filled.csv")
 AllData_A_13$daily_f = fread("A_13_filled.csv")
 #Разобраться со скользящим средним
 
-PlotWindRoses(AllData_A_14$dt)
+PlotWindRoses(AllData_E_14f$dt)
 PlotWindRoses(AllData_O$dt)
 PlotBiomet(list(AllData_A_13, AllData_O, AllData_A_14), filled = TRUE, startDoy = 120, endDoy = 270)
 PlotDiurnal(list(AllData_A_14, AllData_O), startM=4, endM=9)
 PlotFluxSep(list(AllData_A_13, AllData_O,AllData_A_14), filled = FALSE, startDoy = 120, endDoy = 320)
 PlotFluxSepCum(list(AllData_A_13, AllData_O), startDoy = 120, endDoy = 320)
 PlotGPPVegetationAligned(list(AllData_A_13, AllData_O), filled = TRUE)
+PlotAllVegetationAligned(list(AllData_A_13, AllData_O), filled = TRUE)
 
+
+PlotBiomet(list(AllData_E_14f), startDoy = 90, endDoy = 180)
+PlotFluxSep(list(AllData_E_14f,AllData_E_14t), startDoy = 90, endDoy = 180)
+PlotDiurnal(list(AllData_E_14f,AllData_E_14t), startM=4, endM=6)
 
 
 AllData_A_14$daily = AddDailyChambers("A_2014.csv",AllData_A_14)
@@ -103,7 +114,7 @@ PlotRecovsTsoil(list(AllData_A_14, AllData_B_14))
 PlotRecovsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotRecovsSWC(list(AllData_A_13, AllData_O))
 
-
+  
 source(file = "Eddy_postproduction.r", local = TRUE)
 PlotFluxAlignedDaily(datalist,events, start_event)
 PlotFluxAlignedDate(datalist,events, start_event)

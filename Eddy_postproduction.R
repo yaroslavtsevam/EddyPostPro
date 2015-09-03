@@ -23,7 +23,7 @@ adapt_complex_csv = function(data){
     print('Names gotten')
   }
 
-  temp_dataset_startline = which(as.character(temp_dataset$daytime) == "T" | as.character(temp_dataset$daytime) == "F")[1];
+  temp_dataset_startline = which(as.character(temp_dataset$daytime) == "T" | as.character(temp_dataset$daytime) == "F" | as.numeric(temp_dataset$daytime) == 0 | as.numeric(temp_dataset$daytime) == 1)[1];
   temp_dataset = temp_dataset[temp_dataset_startline:length(temp_dataset[['date']]), ]
   print('Removing junk data')
   print("Checking data")
@@ -1115,6 +1115,97 @@ PlotFluxSep = function(DataList,filled = FALSE, startDoy=1, endDoy=12) {
   grid.newpage()
   return(grid.draw(rbind(ggplotGrob(Gr_NEE), ggplotGrob(Gr_Reco), ggplotGrob(Gr_GPP), size = "first")))
 }
+
+
+
+PlotAllVegetationAligned = function (DataList,filled = FALSE) {
+  pd = position_dodge(.1)
+  linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  shape_list = as.factor(c(15,21,17,19))
+  Gr_GPP = ggplot()
+  Gr_NEE = ggplot()
+  Gr_Reco = ggplot()
+  maxDoy = 0
+  minDoy = 365
+  for(n in 1:length(DataList)) {
+    if (filled == TRUE ){
+      plot_data = DataList[[n]]$daily_f
+    } else {
+      plot_data = DataList[[n]]$daily
+    }
+    
+    if(is.null(plot_data$vegetation_day)){
+      stop(paste("Object ",n," in the list doesn't have 'vegetation_day' data"), call. = FALSE)
+    }
+    maxDoy = c(maxDoy, max(plot_data$vegetation_day, na.rm=TRUE))
+    minDoy = c(minDoy, min(plot_data$vegetation_day, na.rm = TRUE))
+    
+    pd = position_dodge(.1*n)
+    Gr_GPP = Gr_GPP + geom_line(data = plot_data, aes(x=vegetation_day, y=ma(GPP* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_GPP = Gr_GPP + geom_point(data = plot_data , aes(x=vegetation_day, y=GPP* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+    Gr_NEE = Gr_NEE + geom_line(data = plot_data, aes(x=vegetation_day, y=ma(NEE_f_sums * 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_NEE = Gr_NEE + geom_point(data = plot_data , aes(x=vegetation_day, y = NEE_f_sums * 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+    Gr_Reco = Gr_Reco + geom_line(data = plot_data, aes(x=vegetation_day, y=ma(Reco* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
+    Gr_Reco = Gr_Reco + geom_point(data = plot_data , aes(x=vegetation_day, y=GPP* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
+    phases_lines = data.frame(levels = levels(as.factor(plot_data$phase)), veg_day = as.vector(by(plot_data, as.factor(plot_data$phase), function(x) min(x$vegetation_day))), label_height = max(plot_data$GPP, na.rm = TRUE)*(.9)*12*18 /10000)
+    phases_lines = cbind(phases_lines[with(phases_lines, order(veg_day)), ], letter = c("", letters[1:length(levels(as.factor(plot_data$phase)))-1]))
+    print(phases_lines)
+    Gr_GPP = Gr_GPP + geom_vline(xintercept = phases_lines$veg_day, size=.5, linetype = linetypes[n], alpha = .5, label=phases_lines$levels)
+    Gr_GPP = Gr_GPP + geom_text(data = phases_lines, aes(x = veg_day,y = label_height,label=letter, hjust = -1, alpha = 0.9,family="serif"), size=6, face="bold", )
+    Gr_NEE = Gr_NEE + geom_vline(xintercept = phases_lines$veg_day, size=.5, linetype = linetypes[n], alpha = .5, label=phases_lines$levels)
+    Gr_NEE = Gr_NEE + geom_text(data = phases_lines, aes(x = veg_day,y = label_height,label=letter, hjust = -1, alpha = 0.9,family="serif"), size=6, face="bold", )
+    Gr_Reco = Gr_Reco + geom_vline(xintercept = phases_lines$veg_day, size=.5, linetype = linetypes[n], alpha = .5, label=phases_lines$levels)
+    Gr_Reco = Gr_Reco + geom_text(data = phases_lines, aes(x = veg_day,y = label_height,label=letter, hjust = -1, alpha = 0.9,family="serif"), size=6, face="bold", )
+    #x=phases_lines$veg_day, y=phases_lines$label_height,
+    ##*(1+1:length(label_height)/20
+  }
+  
+  Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
+  #Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
+  Gr_GPP = Gr_GPP +xlab("Day of vegetation")
+  Gr_GPP = Gr_GPP + ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  Gr_NEE = Gr_NEE + ylab(expression(paste(bold("NEE")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  Gr_Reco = Gr_Reco + ylab(expression(paste(bold("Reco")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  #Gr_GPP = Gr_GPP +geom_vline(xintercept = 163, size=3, alpha=.2)
+  #μmol CO2 m-2s-1)")+
+  #Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
+  Gr_Reco = Gr_Reco + theme_few(base_size = 15, base_family = "serif")
+  Gr_Reco = Gr_Reco + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_Reco = Gr_Reco + theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_Reco = Gr_Reco + theme(plot.margin = unit(c(1,2,1,2), "lines"))
+  
+  
+  
+  Gr_NEE = Gr_NEE + theme_few(base_size = 15, base_family = "serif")
+  Gr_NEE = Gr_NEE + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_NEE = Gr_NEE + theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_NEE = Gr_NEE + theme(plot.margin = unit(c(1,2,1,2), "lines"))
+  
+  Gr_GPP = Gr_GPP + theme_few(base_size = 15, base_family = "serif")
+  Gr_GPP = Gr_GPP + theme(axis.title.y = element_text(size = 15, face="bold"))
+  Gr_GPP = Gr_GPP + theme(axis.title.x = element_text(size =15, face="bold"))
+  Gr_GPP = Gr_GPP + theme(plot.margin = unit(c(1,2,1,2), "lines"))
+  
+  Gr_GPP = Gr_GPP + theme(legend.position="none")
+  Gr_NEE = Gr_NEE + theme(legend.position="none")
+  Gr_Reco = Gr_Reco + theme(legend.position="none")
+  
+  
+  Gr_GPP = Gr_GPP + ggtitle("GPP daily sums for vegetation period")
+  
+  Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
+  Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+  Gr_NEE = Gr_NEE + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
+  Gr_NEE = Gr_NEE + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+  Gr_Reco = Gr_Reco + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
+  Gr_Reco = Gr_Reco + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+  
+  grid.newpage()
+  return(grid.draw(rbind(ggplotGrob(Gr_NEE), ggplotGrob(Gr_Reco), ggplotGrob(Gr_GPP), size = "first")))
+  
+}
+
+
 PlotGPPVegetationAligned = function (DataList,filled = FALSE) {
   pd = position_dodge(.1)
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
