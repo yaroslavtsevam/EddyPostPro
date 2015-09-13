@@ -3,10 +3,14 @@ library("REddyProc")
 library("data.table")
 library('plyr')
 library("ggplot2")
-library('openair')
 library('ggthemes')
 library('pastecs')
+library("grid")
 library("gridExtra")
+library("cowplot")
+library("scales")
+library('openair')
+
 library("RcppRoll") # for fast C++ Rolling mean
 # Reading Data Function
 
@@ -1211,6 +1215,7 @@ PlotGPPVegetationAligned = function (DataList,filled = FALSE) {
   linetypes=c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
   shape_list = as.factor(c(15,21,17,19))
   Gr_GPP = ggplot()
+  Gr_bars = ggplot()
   maxDoy = 0
   minDoy = 365
   for(n in 1:length(DataList)) {
@@ -1230,32 +1235,51 @@ PlotGPPVegetationAligned = function (DataList,filled = FALSE) {
     Gr_GPP = Gr_GPP + geom_line(data = plot_data, aes(x=vegetation_day, y=ma(GPP* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_GPP = Gr_GPP + geom_point(data = plot_data , aes(x=vegetation_day, y=GPP* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
     phases_lines = data.frame(levels = levels(as.factor(plot_data$phase)), veg_day = as.vector(by(plot_data, as.factor(plot_data$phase), function(x) min(x$vegetation_day))), label_height = max(plot_data$GPP, na.rm = TRUE)*(.9)*12*18 /10000)
-    phases_lines = cbind(phases_lines[with(phases_lines, order(veg_day)), ], letter = c("", letters[1:length(levels(as.factor(plot_data$phase)))-1]))
-    print(phases_lines)
-    Gr_GPP = Gr_GPP + geom_vline(xintercept = phases_lines$veg_day, size=.5, linetype = linetypes[n], alpha = .5, label=phases_lines$levels)
-    Gr_GPP = Gr_GPP + geom_text(data = phases_lines, aes(x = veg_day,y = label_height,label=letter, hjust = -1, alpha = 0.9,family="serif"), size=6, face="bold", )
+    phases_lines = cbind(phases_lines[with(phases_lines, order(veg_day)), ], letter = c("a",letters[1:length(levels(as.factor(plot_data$phase)))-1]),field = rep(letters[n],times = length(phases_lines[,1])))
+    phases_lines=phases_lines[-(length(phases_lines[,1])),]
+    phases_lines=phases_lines[-1,]
+    phases_lines$veg_day[1] = phases_lines$veg_day[1] + 1
+    phases_lines[, 2][2:length(phases_lines[,1])] = phases_lines[, 2][2:length(phases_lines[,1])] - phases_lines[, 2][1:(length(phases_lines[,1]-1))]
+    phases_lines[, 2][length(phases_lines[,1])] = max(plot_data$vegetation_day, na.rm=TRUE)-sum(phases_lines[, 2][1:(length(phases_lines[,1])-1)])
+    text_pos = cumsum(phases_lines$veg_day)-phases_lines$veg_day*.5
+    phases_lines = cbind(phases_lines, text_pos)
+    if (n==1){
+      bar_legend = phases_lines
+    } else {
+      bar_legend = rbind(bar_legend,phases_lines)
+    }
+    #Gr_GPP = Gr_GPP + geom_vline(xintercept = phases_lines$veg_day, size=.5, linetype = linetypes[n], alpha = .5, label=phases_lines$levels)
+    #Gr_GPP = Gr_GPP + geom_text(data = phases_lines, aes(x = veg_day,y = label_height,label=letter, hjust = -1, alpha = 0.9,family="serif"), size=6, face="bold", )
   #x=phases_lines$veg_day, y=phases_lines$label_height,
   ##*(1+1:length(label_height)/20
     }
-
+  
+  print(bar_legend )
+  
+  Gr_bars = ggplot(bar_legend ,aes(x = field, y = veg_day)) + geom_bar(position = "stack", stat = "identity",color="black", aes(width = 1, fill= NA)) + geom_text(aes(label=letter, y = text_pos), color="black",size=4,position = position_dodge(height=0.1)) + coord_flip()  + scale_fill_few() + theme_few(base_size = 15, base_family = "serif") + theme(legend.position = "none",axis.text.x =element_blank(), axis.line = element_blank(), axis.title.x = element_blank(),axis.title.y = element_blank(), axis.ticks = element_line(size = 0), panel.border = element_blank(), panel.margin = unit(1, "mm"), plot.margin = unit(c(0,0,0,0), "lines"))
   Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
   #Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
-  Gr_GPP = Gr_GPP +xlab("Day of vegetation")
-  Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
+  #Gr_GPP = Gr_GPP +xlab("Day of vegetation")
+  #Gr_GPP = Gr_GPP +ylab(expression(paste(bold("GPP")," ( ","g "," ",C[CO[2]]," ",m^-2," ",d^-1, " )",sep="")))
   #Gr_GPP = Gr_GPP +geom_vline(xintercept = 163, size=3, alpha=.2)
   #μmol CO2 m-2s-1)")+
   #Gr_GPP = Gr_GPP +scale_x_continuous(breaks = round(seq(min(DataList[[n]]$daily$Doy), max(DataList[[n]]$daily$Doy), by = 30),1))
   Gr_GPP = Gr_GPP +theme_few(base_size = 15, base_family = "serif")
   Gr_GPP = Gr_GPP +theme(axis.title.y = element_text(size = 15, face="bold"))
   Gr_GPP = Gr_GPP +theme(axis.title.x = element_text(size =15, face="bold"))
-  Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(1,2,1,2), "lines"))
+  #Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(1,2,1,2), "lines"))
   Gr_GPP = Gr_GPP + theme(legend.position="none")
   Gr_GPP = Gr_GPP + ggtitle("GPP daily sums for vegetation period")
 
   Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
   Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
+  grid.newpage()
 
-  return(Gr_GPP)
+  #return(grid.draw(rbind(ggplotGrob(Gr_GPP),ggplotGrob(Gr_bars))))
+  #return(ggplotGrob(Gr_bars))
+  #plot_grid(Gr_GPP,Gr_bars,  ncol=1, labels=c(),align = "h")
+  #
+  return(grid.arrange(Gr_GPP,Gr_bars,ncol=1, heights=unit(c(100,15), c("mm", "mm"))))
 }
 
 PlotFluxSepCum  = function(DataList,filled = FALSE, startDoy, endDoy) {
