@@ -1137,13 +1137,13 @@ PlotAllVegetationAligned = function (DataList,filled = FALSE) {
     } else {
       plot_data = DataList[[n]]$daily
     }
-    
+
     if(is.null(plot_data$vegetation_day)){
       stop(paste("Object ",n," in the list doesn't have 'vegetation_day' data"), call. = FALSE)
     }
     maxDoy = c(maxDoy, max(plot_data$vegetation_day, na.rm=TRUE))
     minDoy = c(minDoy, min(plot_data$vegetation_day, na.rm = TRUE))
-    
+
     pd = position_dodge(.1*n)
     Gr_GPP = Gr_GPP + geom_line(data = plot_data, aes(x=vegetation_day, y=ma(GPP* 12*18 /10000)), size=.8, position=pd, linetype=linetypes[n])
     Gr_GPP = Gr_GPP + geom_point(data = plot_data , aes(x=vegetation_day, y=GPP* 12*18 /10000),position=pd,size=2, shape=shape_list[n], fill=n,alpha=.5)
@@ -1163,7 +1163,7 @@ PlotAllVegetationAligned = function (DataList,filled = FALSE) {
     #x=phases_lines$veg_day, y=phases_lines$label_height,
     ##*(1+1:length(label_height)/20
   }
-  
+
   Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
   #Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   Gr_GPP = Gr_GPP +xlab("Day of vegetation")
@@ -1177,36 +1177,36 @@ PlotAllVegetationAligned = function (DataList,filled = FALSE) {
   Gr_Reco = Gr_Reco + theme(axis.title.y = element_text(size = 15, face="bold"))
   Gr_Reco = Gr_Reco + theme(axis.title.x = element_text(size =15, face="bold"))
   Gr_Reco = Gr_Reco + theme(plot.margin = unit(c(1,2,1,2), "lines"))
-  
-  
-  
+
+
+
   Gr_NEE = Gr_NEE + theme_few(base_size = 15, base_family = "serif")
   Gr_NEE = Gr_NEE + theme(axis.title.y = element_text(size = 15, face="bold"))
   Gr_NEE = Gr_NEE + theme(axis.title.x = element_text(size =15, face="bold"))
   Gr_NEE = Gr_NEE + theme(plot.margin = unit(c(1,2,1,2), "lines"))
-  
+
   Gr_GPP = Gr_GPP + theme_few(base_size = 15, base_family = "serif")
   Gr_GPP = Gr_GPP + theme(axis.title.y = element_text(size = 15, face="bold"))
   Gr_GPP = Gr_GPP + theme(axis.title.x = element_text(size =15, face="bold"))
   Gr_GPP = Gr_GPP + theme(plot.margin = unit(c(1,2,1,2), "lines"))
-  
+
   Gr_GPP = Gr_GPP + theme(legend.position="none")
   Gr_NEE = Gr_NEE + theme(legend.position="none")
   Gr_Reco = Gr_Reco + theme(legend.position="none")
-  
-  
+
+
   Gr_GPP = Gr_GPP + ggtitle("GPP daily sums for vegetation period")
-  
+
   Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
   Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
   Gr_NEE = Gr_NEE + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
   Gr_NEE = Gr_NEE + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
   Gr_Reco = Gr_Reco + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
   Gr_Reco = Gr_Reco + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
-  
+
   grid.newpage()
   return(grid.draw(rbind(ggplotGrob(Gr_NEE), ggplotGrob(Gr_Reco), ggplotGrob(Gr_GPP), size = "first")))
-  
+
 }
 
 
@@ -1253,9 +1253,9 @@ PlotGPPVegetationAligned = function (DataList,filled = FALSE) {
   #x=phases_lines$veg_day, y=phases_lines$label_height,
   ##*(1+1:length(label_height)/20
     }
-  
+
   print(bar_legend )
-  
+
   Gr_bars = ggplot(bar_legend ,aes(x = field, y = veg_day)) + geom_bar(position = "stack", stat = "identity",color="black", aes(width = 1, fill= NA)) + geom_text(aes(label=letter, y = text_pos), color="black",size=4,position = position_dodge(height=0.1)) + coord_flip()  + scale_fill_few() + theme_few(base_size = 15, base_family = "serif") + theme(legend.position = "none",axis.text.x =element_blank(), axis.line = element_blank(), axis.title.x = element_blank(),axis.title.y = element_blank(), axis.ticks = element_line(size = 0), panel.border = element_blank(), panel.margin = unit(1, "mm"), plot.margin = unit(c(0,0,0,0), "lines"))
   Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
   #Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
@@ -1550,6 +1550,15 @@ PlotRecovsTsoil = function(DataList, by = FALSE) {
   return(Gr_Reco)
 }
 
+
+# Combine shifted year period from two adjastent --------------------------
+
+ShiftedPeriod = function(DataList, startDate){
+  ShiftedData = list();
+  return(ShiftedData)
+}
+
+
 # PlotRecovsPAR  ----------------------------------------------------------
 
 
@@ -1625,12 +1634,12 @@ PlotRecovsSWC = function(DataList) {
   return(Gr_Reco)
 }
 FindNAlengths = function(x){
-  
+
   m = as.numeric(is.na(x))
   l=0
   res=c()
   for(n in 1:length(M)){
-    
+
     if (m[n]==1){
       l=l+1
     }else {
@@ -1638,7 +1647,7 @@ FindNAlengths = function(x){
       l=0
     }
   }
-  
+
   lev = as.numeric(levels(as.factor(res)))
   counter = c()
   for(n in 1:length(lev)){

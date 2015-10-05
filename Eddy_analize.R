@@ -9,6 +9,8 @@ source(file = "Eddy_postproduction.r", local=TRUE)
 DataFolderA_13 = 'Data_A/'
 DataFolderB_13 = 'Data_B/'
 DataFolderA_14 = 'Data_A_14/'
+DataFolderA_15 = 'Data_A_15/'
+DataFolderB_15 = 'Data_B_15/'
 DataFolderB_14 = 'Data_B_14/'
 DataFolderO = 'Data_O'
 DataFolderE_14 = 'Data_E'
@@ -39,7 +41,8 @@ AllData_A_13 = FullEddyPostProcess(DataFolderA_13,Site_A,site_polygon_A,events_A
 AllData_B_13 = FullEddyPostProcess(DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 #save(AllData_B, file="AllData_B_2013")
 AllData_A_14 = FullEddyPostProcess(DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
-
+AllData_A_15 = FullEddyPostProcess(DataFolderA_15,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+AllData_B_15 = FullEddyPostProcess(DataFolderB_15,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 AllData_B_14 = FullEddyPostProcess(DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 AllData_O = FullEddyPostProcess(DataFolderO,Site_O,site_polygon_O,events_O,Site_coord_and_zone_O, All_towers_height)
 #save(AllData_B, file="AllData_B_2013")
@@ -77,17 +80,17 @@ AllData_A_13$daily_f = fread("A_13_filled.csv")
 
 PlotWindRoses(AllData_E_14f$dt)
 PlotWindRoses(AllData_O$dt)
-PlotBiomet(list(AllData_A_13, AllData_O, AllData_A_14), filled = TRUE, startDoy = 1, endDoy = 365)
-PlotDiurnal(list(AllData_A_13, AllData_O), startM=4, endM=9)
-PlotFluxSep(list(AllData_A_13, AllData_O), filled = TRUE, startDoy = 120, endDoy = 320)
-PlotFluxSepCum(list(AllData_A_13, AllData_O), startDoy = 120, endDoy = 365, filled = TRUE)
+PlotBiomet(list(AllData_A_15, AllData_B_15), filled = FALSE, startDoy = 1, endDoy = 180)
+PlotDiurnal(list(AllData_B_15, AllData_A_15), startM=1, endM=4)
+PlotFluxSep(list(AllData_A_15, AllData_B_15), filled = FALSE, startDoy = 1, endDoy = 150)
+PlotFluxSepCum(list(AllData_A_15, AllData_B_15), startDoy = 1, endDoy = 95, filled = FALSE)
 PlotGPPVegetationAligned(list(AllData_A_13, AllData_O), filled = TRUE)
 PlotAllVegetationAligned(list(AllData_A_13, AllData_O), filled = TRUE)
 
 
 PlotBiomet(list(AllData_E_14f), startDoy = 90, endDoy = 180)
 PlotFluxSep(list(AllData_E_14f,AllData_E_14t), startDoy = 90, endDoy = 180)
-PlotDiurnal(list(AllData_E_14f,AllData_E_14t), startM=4, endM=6)
+PlotDiurnal(list(AllData_A_15,AllData_A_14), startM=1, endM=4)
 
 
 AllData_A_14$daily = AddDailyChambers("A_2014.csv",AllData_A_14)
@@ -114,7 +117,7 @@ PlotRecovsTsoil(list(AllData_A_14, AllData_B_14))
 PlotRecovsPAR(list(AllData_A_13, AllData_O),by = "SWC")
 PlotRecovsSWC(list(AllData_A_13, AllData_O))
 
-  
+
 source(file = "Eddy_postproduction.r", local = TRUE)
 PlotFluxAlignedDaily(datalist,events, start_event)
 PlotFluxAlignedDate(datalist,events, start_event)
