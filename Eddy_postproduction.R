@@ -1256,7 +1256,9 @@ PlotGPPVegetationAligned = function (DataList,filled = FALSE) {
 
   print(bar_legend )
 
-  Gr_bars = ggplot(bar_legend ,aes(x = field, y = veg_day)) + geom_bar(position = "stack", stat = "identity",color="black", aes(width = 1, fill= NA)) + geom_text(aes(label=letter, y = text_pos), color="black",size=4,position = position_dodge(height=0.1)) + coord_flip()  + scale_fill_few() + theme_few(base_size = 15, base_family = "serif") + theme(legend.position = "none",axis.text.x =element_blank(), axis.line = element_blank(), axis.title.x = element_blank(),axis.title.y = element_blank(), axis.ticks = element_line(size = 0), panel.border = element_blank(), panel.margin = unit(1, "mm"), plot.margin = unit(c(0,0,0,0), "lines"))
+  Gr_bars = ggplot(bar_legend, aes(x = field, y = veg_day)) + geom_bar(position = "stack", stat = "identity", color="black", aes(width = 1, fill= NA)) + geom_text(aes(label=letter, y = text_pos), color="black",size=4,position = position_dodge(height=0.1)) + coord_flip()  + scale_fill_few()  + scale_y_continuous() + theme_few(base_size = 15, base_family = "serif") + theme(legend.position = "none", axis.line = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), axis.ticks = element_line(size = 0), axis.text.x = element_blank(),  panel.border = element_blank(), panel.margin = unit(1, "mm"), plot.margin = unit(c(0,0,0,0), "lines"))
+  #+ scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
+  #
   Gr_GPP = Gr_GPP + geom_hline(yintercept = 0, size=.5, linetype = 2)
   #Gr_GPP = Gr_GPP +geom_vline(xintercept = 250, size=.5, linetype = 1, alpha=.5, size=2)
   #Gr_GPP = Gr_GPP +xlab("Day of vegetation")
@@ -1270,16 +1272,19 @@ PlotGPPVegetationAligned = function (DataList,filled = FALSE) {
   #Gr_GPP = Gr_GPP +theme(plot.margin = unit(c(1,2,1,2), "lines"))
   Gr_GPP = Gr_GPP + theme(legend.position="none")
   Gr_GPP = Gr_GPP + ggtitle("GPP daily sums for vegetation period")
-
+  
   Gr_GPP = Gr_GPP + scale_x_continuous(breaks = round(seq(min(minDoy),max(maxDoy), by = 10),1))
   Gr_GPP = Gr_GPP + coord_cartesian(xlim = c(min(minDoy), max(maxDoy)))
   grid.newpage()
-
+  
   #return(grid.draw(rbind(ggplotGrob(Gr_GPP),ggplotGrob(Gr_bars))))
   #return(ggplotGrob(Gr_bars))
   #plot_grid(Gr_GPP,Gr_bars,  ncol=1, labels=c(),align = "h")
-  #
-  return(grid.arrange(Gr_GPP,Gr_bars,ncol=1, heights=unit(c(100,15), c("mm", "mm"))))
+  
+  #return(grid.arrange(Gr_GPP,Gr_bars,ncol=1, heights=unit(c(100,15), c("mm", "mm"))))
+  #return(plot_grid(Gr_GPP,Gr_bars, labels = c("A", "B"), nrow = 2, align = "v"))
+  
+  return(grid.draw(arrangeGrob(Gr_GPP,Gr_bars,heights=c(9,1))))
 }
 
 PlotFluxSepCum  = function(DataList,filled = FALSE, startDoy, endDoy) {
