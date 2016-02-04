@@ -10,7 +10,6 @@ library("gridExtra")
 library("cowplot")
 library("scales")
 library('openair')
-
 library("RcppRoll") # for fast C++ Rolling mean
 # Reading Data Function
 
