@@ -2,7 +2,6 @@
 
 source(file = "Eddy_postproduction.r", local=TRUE)
 
-
 # Loading towers metadata -------------------------------------------------
 ###TODO: Make metdata loadable from tower folder
 
