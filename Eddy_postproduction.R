@@ -9,7 +9,7 @@ library("grid")
 library("gridExtra")
 library("cowplot")
 library("scales")
-library('openair')
+#library('openair')
 library("RcppRoll") # for fast C++ Rolling mean
 # Reading Data Function
 
@@ -274,10 +274,16 @@ fill_gap_by_date  = function(oldData,TimeVariableName,newDataNumberofColumns){
     print(oldData[[TimeVariableName]][(i+1)])
     num_posix_dates = seq.POSIXt(oldData[[TimeVariableName]][(i)], oldData[[TimeVariableName]][(i+1)], by = as.difftime(30,units = "mins"))
     num_posix_dates = num_posix_dates[2:(length(num_posix_dates)-1)]
-    gap = as.data.frame(cbind(num_posix_dates))
+    #num_posix_dates = as.POSIXlt(num_posix_dates, tz="GMT",origin = "1970-01-01 00:00:00")
+    print(class(num_posix_dates))
+    gap = as.data.frame(num_posix_dates)
     gap[,2:newDataNumberofColumns] = "NA"
-    #gap[,1] = as.POSIXlt(gap[,1], tz="GMT","1970-01-01 00:00:00")
-    NewData = rbindlist(list(NewData[1:(i+gap_length),], gap, NewData[(i+1+gap_length):length(NewData[[TimeVariableName]]),]))
+    print(class(gap[,1]))
+    #gap[,1] = as.POSIXlt(gap[,1], tz="GMT",origin = "1970-01-01 00:00:00")
+    names(gap)=names(NewData)
+    print(gap)
+    print(class(NewData[,1]))   
+    NewData = rbind(NewData[1:(i+gap_length),], gap, NewData[(i+1+gap_length):length(NewData[[TimeVariableName]]),])
     gap_length = gap_length + length(num_posix_dates)
     print(paste(paste("Date gap ",i,"")," filled",""))
   }

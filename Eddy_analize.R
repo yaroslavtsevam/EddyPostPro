@@ -33,22 +33,22 @@ All_towers_height  = 1.5
 E_tower_height  = 34
 
 
-AllData_E_14f = FullEddyPostProcess(DataFolderE_14,Site_E,site_polygon_Ef,events_E,Site_coord_and_zone,E_tower_height)
-AllData_E_14t = FullEddyPostProcess(DataFolderE_14,Site_E,site_polygon_Et,events_E,Site_coord_and_zone,E_tower_height)
 AllData_A_13 = FullEddyPostProcess(DataFolderA_13,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
-
 AllData_B_13 = FullEddyPostProcess(DataFolderB_13,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-#save(AllData_B, file="AllData_B_2013")
 AllData_A_14 = FullEddyPostProcess(DataFolderA_14,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
-AllData_A_15 = FullEddyPostProcess(DataFolderA_15,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
-AllData_B_15 = FullEddyPostProcess(DataFolderB_15,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
 AllData_B_14 = FullEddyPostProcess(DataFolderB_14,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
-AllData_O = FullEddyPostProcess(DataFolderO,Site_O,site_polygon_O,events_O,Site_coord_and_zone_O, All_towers_height)
-#save(AllData_B, file="AllData_B_2013")
-
-#Adding PAR to site B as soon they very close
 AllData_B_13$dt = merge(AllData_B_13$dt,AllData_A_13$dt[,c(1,40),with = FALSE], by = 'DateTime')
 AllData_B_14$dt = merge(AllData_B_14$dt,AllData_A_14$dt[,c(1,40),with = FALSE], by = 'DateTime')
+
+AllData_O = FullEddyPostProcess(DataFolderO,Site_O,site_polygon_O,events_O,Site_coord_and_zone_O, All_towers_height)
+AllData_A_15 = FullEddyPostProcess(DataFolderA_15,Site_A,site_polygon_A,events_A,Site_coord_and_zone,All_towers_height)
+AllData_B_15 = FullEddyPostProcess(DataFolderB_15,Site_B,site_polygon_B,events_B,Site_coord_and_zone,All_towers_height)
+AllData_E_14f = FullEddyPostProcess(DataFolderE_14,Site_E,site_polygon_Ef,events_E,Site_coord_and_zone,E_tower_height)
+AllData_E_14t = FullEddyPostProcess(DataFolderE_14,Site_E,site_polygon_Et,events_E,Site_coord_and_zone,E_tower_height)
+#save(AllData_B, file="AllData_B_2013")
+#save(AllData_B, file="AllData_B_2013")
+#Adding PAR to site B as soon they very close
+
 
 Quality_NEE = length(which(is.na(AllData_B$dt$NEE)))/length(AllData_B$dt$H2O_NEE)
 
