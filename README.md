@@ -1,2 +1,2 @@
 # EddyPostPro
-EddyPro data postproduction
+EddyPro eddy covariance data postproduction
