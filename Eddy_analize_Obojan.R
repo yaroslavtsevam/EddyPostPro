@@ -1,6 +1,6 @@
 source(file="Eddy_postproduction.r", local=TRUE)
 
-
+#Так пишут только идиоты!
 DataFolderA = 'Data_A'
 DataFolderB = 'Data_B'
 DataFolderO = 'Data_O'
